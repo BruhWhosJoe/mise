@@ -89,28 +89,26 @@ function AssistantPanel({ maxWidth }: { maxWidth: number }) {
     <div className="assistant-inner">
       <div className="assistant-header">
         <h2>Assistant</h2>
-        <button
-          type="button"
-          className="secondary small"
-          aria-expanded="true"
-          aria-controls="assistant-panel"
-          onClick={() => setAssistantOpen(false)}
-        >
-          Hide assistant
-        </button>
-      </div>
-      <div className="assistant-width">
-        <button
-          type="button"
-          className="secondary small"
-          aria-expanded={expanded}
-          onClick={toggleExpanded}
-        >
-          {expanded ? 'Restore panel size' : 'Expand panel'}
-        </button>
-        <p className="assistant-resize-hint">
-          Drag the panel edge, or focus it and use the arrow keys.
-        </p>
+        <div className="assistant-header-actions">
+          <button
+            type="button"
+            className="secondary small"
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Narrow assistant panel' : 'Widen assistant panel'}
+            onClick={toggleExpanded}
+          >
+            {expanded ? 'Narrow' : 'Widen'}
+          </button>
+          <button
+            type="button"
+            className="secondary small"
+            aria-expanded="true"
+            aria-controls="assistant-panel"
+            onClick={() => setAssistantOpen(false)}
+          >
+            Hide
+          </button>
+        </div>
       </div>
 
       <section className="context-card" aria-label="Current investigation">
@@ -143,21 +141,59 @@ function AssistantPanel({ maxWidth }: { maxWidth: number }) {
         )}
       </section>
 
+      <details className="assistant-help">
+        <summary>How the assistant works</summary>
+        <ul>
+          <li>
+            Explanations and comparisons never change your results or
+            collection.
+          </li>
+          <li>
+            I apply only explicit requests — selecting the top results,
+            adding or removing datasets, narrowing filters — with an Undo
+            for each change.
+          </li>
+          <li>
+            Refinements only narrow what is shown. Recipes are generated
+            only when you ask on the Data Recipe view.
+          </li>
+        </ul>
+      </details>
+
       <section aria-label="Conversation" className="conversation">
         <h3>Conversation</h3>
         {assistant.messages.length === 0 ? (
-          hasResults ? (
-            <p className="assistant-hint">
-              Ask about your recommendations — for example, “Why was this
-              dataset recommended?” or “Select the top 3.”
+          <div className="conversation-empty">
+            {hasResults ? (
+              <p className="assistant-hint">
+                Ask about your recommendations — for example, “Why was this
+                dataset recommended?” or “Select the top 3.”
+              </p>
+            ) : (
+              <p className="assistant-hint">
+                Run an AI Discovery search first. Then I can explain
+                recommendations, compare datasets, or add them to your
+                collection when you ask.
+              </p>
+            )}
+            <div className="choice-actions">
+              {PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  className="secondary small"
+                  aria-label={`${preset.label}: ${preset.question}`}
+                  onClick={() => prefillQuestion(preset.question)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <p className="sample-note">
+              Starter questions fill the AI Discovery question box — they
+              don&apos;t send a chat message or start a search.
             </p>
-          ) : (
-            <p className="assistant-hint">
-              Run an AI Discovery search first. Then I can explain
-              recommendations, compare datasets, or add them to your
-              collection when you ask.
-            </p>
-          )
+          </div>
         ) : (
           <ol className="assistant-messages">
             {assistant.messages.map((message) => (
@@ -257,46 +293,6 @@ function AssistantPanel({ maxWidth }: { maxWidth: number }) {
           </div>
         </form>
       </section>
-
-      <section aria-labelledby="assistant-presets-heading">
-        <h3 id="assistant-presets-heading">Try a starter question</h3>
-        <div className="choice-actions">
-          {PRESETS.map((preset) => (
-            <button
-              key={preset.label}
-              type="button"
-              className="secondary small"
-              aria-label={`${preset.label}: ${preset.question}`}
-              onClick={() => prefillQuestion(preset.question)}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-        <p className="sample-note">
-          These fill the AI Discovery question box — they don&apos;t send a
-          chat message or start a search.
-        </p>
-      </section>
-
-      <details className="assistant-help">
-        <summary>How the assistant works</summary>
-        <ul>
-          <li>
-            Explanations and comparisons never change your results or
-            collection.
-          </li>
-          <li>
-            I apply only explicit requests — selecting the top results,
-            adding or removing datasets, narrowing filters — with an Undo
-            for each change.
-          </li>
-          <li>
-            Refinements only narrow what is shown. Recipes are generated
-            only when you ask on the Data Recipe view.
-          </li>
-        </ul>
-      </details>
     </div>
   )
 }

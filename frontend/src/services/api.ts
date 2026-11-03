@@ -1,4 +1,4 @@
-/** Typed client for the MetaFabric backend API (same-origin `/api` URLs). */
+/** Typed client for the Mise backend API (same-origin `/api` URLs). */
 
 export interface ApiHealth {
   status: string
@@ -185,7 +185,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new ApiError(
       0,
-      'Could not reach the MetaFabric backend. Start it on port 8001 and retry.',
+      'Could not reach the Mise backend. Start it on port 8001 and retry.',
     )
   }
   if (!response.ok) {

@@ -1,4 +1,4 @@
-"""Pydantic response models for the MetaFabric backend API."""
+"""Pydantic response models for the Mise backend API."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 class HealthResponse(BaseModel):
     status: str = 'ok'
-    service: str = 'metafabric-backend'
+    service: str = 'mise-backend'
 
 
 class MCPToolInfo(BaseModel):

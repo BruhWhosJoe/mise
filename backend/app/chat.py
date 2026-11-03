@@ -68,7 +68,7 @@ _READONLY_OPS = frozenset({'explain', 'compare', 'suggest_question', 'clarify'})
 
 _VALID_SORTS = frozenset({'score-desc', 'score-asc', 'title'})
 
-CHAT_SYSTEM = """You are the MetaFabric assistant, helping with the user's current investigation.
+CHAT_SYSTEM = """You are the Mise assistant, helping with the user's current investigation.
 Return JSON only, matching this shape:
 {"reply": string, "actions": [{"op": string, "assigned_ids": [string],
 "count": int | null, "min_score": int | null, "sort": string | null}],

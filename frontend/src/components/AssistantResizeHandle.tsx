@@ -49,6 +49,7 @@ function AssistantResizeHandle({ width, maxWidth, onChange }: ResizeHandleProps)
       role="separator"
       aria-orientation="vertical"
       aria-label="Resize assistant panel"
+      title="Drag to resize, or focus and use the arrow keys"
       aria-valuenow={Math.round(width)}
       aria-valuemin={ASSISTANT_MIN_WIDTH}
       aria-valuemax={Math.round(maxWidth)}

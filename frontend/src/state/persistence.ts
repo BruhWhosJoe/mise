@@ -8,7 +8,9 @@ import type {
   WorkspaceState,
 } from './workspaceTypes'
 
-export const WORKSPACE_STORAGE_KEY = 'mf-workspace-v1'
+export const WORKSPACE_STORAGE_KEY = 'mise-workspace-v1'
+/** Pre-rename key: read once as a fallback so saved work survives. */
+export const LEGACY_WORKSPACE_STORAGE_KEY = 'mf-workspace-v1'
 // Version 2: discovery recommendations carry AI relevance scores and the
 // results filter prefs are persisted. Older payloads are discarded (fresh
 // start) rather than shown without scores.
@@ -359,6 +361,11 @@ export function loadWorkspace(storage: MinimalStorage): LoadResult {
   let stored: string | null
   try {
     stored = storage.getItem(WORKSPACE_STORAGE_KEY)
+    // One-way migration: pre-rename saves load from the legacy key, and
+    // the next save writes the new key.
+    if (stored === null) {
+      stored = storage.getItem(LEGACY_WORKSPACE_STORAGE_KEY)
+    }
   } catch {
     return { ok: false, reason: 'missing' }
   }

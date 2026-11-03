@@ -52,13 +52,11 @@ function InvestigationSummary() {
   if (!started) return null
 
   const total = result?.recommendations.length ?? 0
-  // During a search the in-flight question is the useful progress signal —
-  // never a "no question yet" line. On the discovery view itself the
-  // question box is right below, so a missing question needs no callout.
+  // During a search the in-flight question is the useful progress signal.
+  // With no question at all the line is omitted entirely.
   const searching =
     state.aiSearch.status === 'loading' && state.aiSearch.question !== null
-  const showQuestionLine =
-    state.liveQuestion !== null || searching || state.view !== 'discover'
+  const showQuestionLine = state.liveQuestion !== null || searching
 
   return (
     <section className="investigation-summary" aria-label="Investigation summary">
@@ -69,12 +67,10 @@ function InvestigationSummary() {
               <>
                 Investigating: <q>{state.liveQuestion}</q>
               </>
-            ) : searching ? (
+            ) : (
               <>
                 Searching for: <q>{state.aiSearch.question}</q>
               </>
-            ) : (
-              'No investigation question yet'
             )}
           </p>
         )}

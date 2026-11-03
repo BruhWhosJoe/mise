@@ -162,6 +162,12 @@ function AIDiscovery() {
     return () => window.clearInterval(timer)
   }, [loading])
 
+  useEffect(() => {
+    if (draftError === null) return
+    const timer = window.setTimeout(() => setDraftError(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [draftError])
+
   function handleExampleClick(example: string) {
     setDraft(example)
     setDraftError(null)
@@ -193,7 +199,7 @@ function AIDiscovery() {
     event.preventDefault()
     const trimmed = draft.trim()
     if (!trimmed) {
-      setDraftError('Enter a question before searching.')
+      setDraftError('Type a question first.')
       textareaRef.current?.focus()
       return
     }
@@ -249,7 +255,7 @@ function AIDiscovery() {
           </div>
         </div>
         {draftError && (
-          <p id="ai-question-error" className="error" role="alert">
+          <p id="ai-question-error" className="question-toast" role="alert">
             {draftError}
           </p>
         )}

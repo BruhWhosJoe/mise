@@ -52,7 +52,7 @@ function pageWindow(
 
 function downloadReferences(selected: LiveRecord[]): void {
   const payload = {
-    note: 'Dataset references exported from the MetaFabric live catalog preview; not a generated recipe.',
+    note: 'Dataset references exported from the Mise live catalog preview; not a generated recipe.',
     exported_at: new Date().toISOString(),
     count: selected.length,
     records: selected.map((record) => ({
@@ -71,7 +71,7 @@ function downloadReferences(selected: LiveRecord[]): void {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = 'metafabric-dataset-references.json'
+  anchor.download = 'mise-dataset-references.json'
   document.body.appendChild(anchor)
   anchor.click()
   anchor.remove()

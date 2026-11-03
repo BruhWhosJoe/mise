@@ -26,7 +26,7 @@ def client_fixture():
 def test_health_reports_backend_running(client):
     response = client.get('/api/health')
     assert response.status_code == 200
-    assert response.json() == {'status': 'ok', 'service': 'metafabric-backend'}
+    assert response.json() == {'status': 'ok', 'service': 'mise-backend'}
 
 
 def test_status_reports_tools_when_reachable(client, monkeypatch):

@@ -440,7 +440,7 @@ function LiveRecipe() {
               className="secondary small"
               onClick={() =>
                 downloadTextFile(
-                  'metafabric-data-recipe.md',
+                  'mise-data-recipe.md',
                   buildRecipeMarkdown(data),
                   'text/markdown',
                 )
@@ -453,7 +453,7 @@ function LiveRecipe() {
               className="secondary small"
               onClick={() =>
                 downloadTextFile(
-                  'metafabric-data-recipe.json',
+                  'mise-data-recipe.json',
                   JSON.stringify(data, null, 2),
                   'application/json',
                 )

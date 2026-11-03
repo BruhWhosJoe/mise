@@ -46,12 +46,12 @@
   fill: var(--nav-active);
 }
 
-.brand-mark-thread {
-  stroke: var(--focus-on-dark);
+.brand-mark-bowl {
+  stroke: var(--nav-bg);
 }
 
-.brand-mark-knot {
-  fill: var(--nav-text);
+.brand-mark-dot {
+  fill: var(--nav-bg);
 }
 
 .brand-name {
@@ -330,6 +330,19 @@
   margin-top: 0.75rem;
 }
 
+/* Empty-question toast: visible under the question box, auto-dismisses. */
+
+.question-toast {
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--danger);
+  border-left: 4px solid var(--danger);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--danger);
+  font-weight: 600;
+}
+
 /* Cancel reads as a destructive secondary action in both themes. */
 button.secondary.button-danger {
   color: var(--danger);
@@ -534,26 +547,6 @@ button.secondary.button-danger:hover {
   flex-shrink: 0;
 }
 
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.checkbox-row label {
-  margin: 0;
-  font-weight: 500;
-}
-
-.dataset-actions .checkbox-row label {
-  font-weight: 600;
-}
-
-.dataset-card.is-selected .checkbox-row label {
-  color: var(--action);
-  font-weight: 600;
-}
-
 .dataset-details {
   margin-top: 0.55rem;
   border-top: 1px solid var(--border-soft);
@@ -707,7 +700,8 @@ button.secondary.button-danger:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem 0.75rem;
+  flex-wrap: wrap;
   margin: -1.25rem -1.25rem 0.75rem;
   padding: 0.9rem 1.25rem;
   background: var(--nav-bg);
@@ -717,8 +711,14 @@ button.secondary.button-danger:hover {
 
 .assistant-header h2 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   color: var(--nav-text);
+}
+
+.assistant-header-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .assistant-header .secondary {
@@ -812,8 +812,12 @@ button.secondary.button-danger:hover {
   padding-right: 0.25rem;
 }
 
+.conversation-empty {
+  flex: 1 1 auto;
+}
+
 .assistant-help {
-  margin-top: 1.25rem;
+  margin: 0.75rem 0 0;
   border-top: 1px solid var(--border-soft);
   padding-top: 0.75rem;
   color: var(--text-secondary);
@@ -1299,20 +1303,6 @@ button.secondary.preset-active:hover {
   font-size: 0.9rem;
 }
 
-.assistant-width {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
-  margin-bottom: 0.5rem;
-}
-
-.assistant-resize-hint {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
-
 .assistant-messages {
   list-style: none;
   padding: 0;
@@ -1569,10 +1559,9 @@ button.secondary.preset-active:hover {
     overflow: visible;
   }
 
-  /* Stacked full-width: drag and expand are meaningless, so hide them and
+  /* Stacked full-width: dragging is meaningless, so hide the handle and
      let the composer sit in normal flow. */
-  .assistant-resize-handle,
-  .assistant-width {
+  .assistant-resize-handle {
     display: none;
   }
 

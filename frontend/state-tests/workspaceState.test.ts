@@ -9,6 +9,7 @@ import type {
 import type { WorkspaceState } from '../src/state/workspaceTypes'
 import type { MinimalStorage } from '../src/state/persistence'
 import {
+  LEGACY_WORKSPACE_STORAGE_KEY,
   MAX_PERSIST_BYTES,
   RECIPE_INTERRUPTED_MESSAGE,
   SEARCH_INTERRUPTED_MESSAGE,
@@ -1017,6 +1018,26 @@ describe('discovery filter prefs in the store', () => {
     assert.equal(after.discoveryUI.text, '')
     assert.equal(after.liveQuestion, 'flood risk?')
   })
+
+  it('migrates saves stored under the pre-rename key', () => {
+    const source = new MemoryStorage()
+    assert.equal(saveWorkspace(source, investigatedState()), 'saved')
+    const raw = source.raw()
+    assert.ok(raw !== null)
+    const storage = new MemoryStorage()
+    storage.setItem(LEGACY_WORKSPACE_STORAGE_KEY, raw as string)
+    const loaded = loadWorkspace(storage)
+    assert.equal(loaded.ok, true)
+    if (!loaded.ok) return
+    assert.equal(loaded.value.liveQuestion, 'flood risk?')
+    // The next save lands on the new key.
+    const after = workspaceReducer(createInitialState('inv-9'), {
+      type: 'hydrate',
+      persisted: loaded.value,
+    })
+    assert.equal(saveWorkspace(storage, after), 'saved')
+    assert.ok(storage.raw() !== null)
+  })
 })
 
 function makeMultiDiscovery(
@@ -1315,10 +1336,10 @@ describe('assistant panel sizing and chat retry', () => {
   it('caps the panel below the full app width on desktop viewports', () => {
     // Wide screens allow the full 640px expansion.
     assert.equal(maxAssistantWidth(1920), ASSISTANT_MAX_WIDTH)
-    // Mid-size screens cap at 45% of the viewport.
-    assert.equal(maxAssistantWidth(1280), Math.floor(1280 * 0.45))
+    // Mid-size screens cap at 65% of the viewport (640px binds here).
+    assert.equal(maxAssistantWidth(1280), ASSISTANT_MAX_WIDTH)
     // Tight desktops shrink the cap so nav + workspace stay readable.
-    assert.equal(maxAssistantWidth(1100), Math.floor(1100 * 0.45))
+    assert.equal(maxAssistantWidth(1100), 1100 - 232 - 360)
     for (const viewport of [1100, 1200, 1366, 1440, 1600, 1920]) {
       const max = maxAssistantWidth(viewport)
       assert.ok(max + 232 + 360 <= viewport)
@@ -1329,10 +1350,7 @@ describe('assistant panel sizing and chat retry', () => {
 
   it('clamps the rendered width without changing the stored width', () => {
     assert.equal(effectiveAssistantWidth(9999, 1920), ASSISTANT_MAX_WIDTH)
-    assert.equal(
-      effectiveAssistantWidth(9999, 1100),
-      Math.floor(1100 * 0.45),
-    )
+    assert.equal(effectiveAssistantWidth(9999, 1100), 1100 - 232 - 360)
     assert.equal(effectiveAssistantWidth(10, 1920), ASSISTANT_MIN_WIDTH)
     assert.equal(effectiveAssistantWidth(351.6, 1920), 352)
     assert.equal(

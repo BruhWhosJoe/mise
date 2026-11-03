@@ -1,10 +1,10 @@
-# MetaFabric Handoff
+# Mise Handoff
 
 Independent civic-research app (separate from MetaFabricAI — never access or copy that project).
 
 ## 1. Goal and architecture
 
-MetaFabric helps people discover government open datasets and assemble a **Data Recipe**:
+Mise helps people discover government open datasets and assemble a **Data Recipe**:
 an analysis plan explaining how selected datasets could support a research question.
 It never executes analysis or invents findings.
 

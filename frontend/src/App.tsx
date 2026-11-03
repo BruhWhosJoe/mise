@@ -78,9 +78,9 @@ function Shell() {
       <nav className="side-nav" aria-label="Primary">
         <div className="brand">
           <BrandMark />
-          <span className="brand-name">MetaFabric</span>
+          <span className="brand-name">Mise</span>
         </div>
-        <p className="brand-tag">Government open data discovery</p>
+        <p className="brand-tag">Get your data ready before you analyze.</p>
         <ul>
           {NAV_ITEMS.map((item) => (
             <li key={item.id}>
@@ -205,7 +205,7 @@ function Shell() {
           </div>
         )}
 
-        <InvestigationSummary />
+        {!assistantOpen && <InvestigationSummary />}
 
         {view === 'discover' && <AIDiscovery />}
         {view === 'catalog' && <LiveCatalog />}

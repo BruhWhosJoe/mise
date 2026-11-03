@@ -31,7 +31,7 @@ export const MAX_CHAT_MESSAGES = 200
 
 /**
  * Widest the assistant may render at for a viewport: at most 640px and at
- * most 45% of the viewport, while the nav and a readable workspace always
+ * most 65% of the viewport, while the nav and a readable workspace always
  * keep their space. Below the stacking breakpoint the panel stacks
  * full-width, so the stored width is irrelevant there; this still returns
  * a sane bound for clamping.
@@ -41,7 +41,7 @@ export function maxAssistantWidth(viewportWidth: number): number {
     return ASSISTANT_MAX_WIDTH
   }
   const available = Math.floor(viewportWidth - NAV_WIDTH - MIN_WORKSPACE_WIDTH)
-  const share = Math.floor(viewportWidth * 0.45)
+  const share = Math.floor(viewportWidth * 0.65)
   return Math.min(
     ASSISTANT_MAX_WIDTH,
     Math.max(ASSISTANT_MIN_WIDTH, Math.min(available, share)),

@@ -71,7 +71,6 @@ function LiveRecordCard({
 
   const cardId = record.assigned_id ?? `record-${record.title ?? 'untitled'}`
   const safeId = cardId.replace(/[^a-zA-Z0-9_-]/g, '-')
-  const checkboxId = `live-select-${safeId}`
   const detailId = `live-detail-${safeId}`
   const overviewId = `live-overview-${safeId}`
   const selectable = record.assigned_id !== null
@@ -247,22 +246,24 @@ function LiveRecordCard({
         )}
 
         <div className="dataset-actions">
-          <div className="checkbox-row">
-            <input
-              type="checkbox"
-              id={checkboxId}
-              checked={selected}
-              disabled={!selectable}
-              onChange={() => onToggle(record)}
-            />
-            <label htmlFor={checkboxId}>
-              {!selectable
-                ? 'Not selectable (no ID)'
-                : selected
-                  ? 'Added to recipe'
-                  : 'Add to recipe'}
-            </label>
-          </div>
+          <button
+            type="button"
+            className={selected ? 'secondary small' : 'small'}
+            aria-pressed={selected}
+            disabled={!selectable}
+            title={
+              selectable
+                ? undefined
+                : 'A dataset ID is needed to add it to the recipe'
+            }
+            onClick={() => onToggle(record)}
+          >
+            {!selectable
+              ? 'Not selectable (no ID)'
+              : selected
+                ? 'Added to recipe'
+                : 'Add to recipe'}
+          </button>
           <DatasetCardLinks record={record} />
           <button
             type="button"

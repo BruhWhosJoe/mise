@@ -1,6 +1,6 @@
-# MetaFabric backend
+# Mise backend
 
-Small FastAPI service that connects the MetaFabric frontend to the remote
+Small FastAPI service that connects the Mise frontend to the remote
 metadata MCP service. Flow: browser → our backend → MCP → browser.
 
 ## Layout
