@@ -23,6 +23,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from .model_client import (
     ModelClient,
     ModelOutputError,
+    ModelTruncatedError,
     check_configured,
     model_settings_from_env,
 )
@@ -94,6 +95,7 @@ Rules:
 - Ambiguous mutating requests get "clarify" with a short question, not a guess. Explicit select-top-N style requests may act immediately with one mutating action.
 - Broader "what should I ask" requests get "suggest_question" plus a concrete suggested_question string; the client offers it as "Use this question" without submitting.
 - Emit at most one mutating action per response. An empty actions array is acceptable for plain explanations.
+- Keep the reply concise: under about 150 words.
 - Never output code, and never describe recipe generation as automatic: recipes are generated only when the user explicitly asks on the Data Recipe view."""
 
 
@@ -468,12 +470,25 @@ async def run_chat(body: ChatRequest) -> ChatResponse:
         history=history,
     )
     user_text = json.dumps(user_payload, default=str)
-    raw = await client.complete_json(
-        system=CHAT_SYSTEM,
-        user=user_text,
-        schema_name='chat',
-        schema=_ChatModelOutput.model_json_schema(),
-    )
+    try:
+        raw = await client.complete_json(
+            system=CHAT_SYSTEM,
+            user=user_text,
+            schema_name='chat',
+            schema=_ChatModelOutput.model_json_schema(),
+        )
+    except ModelTruncatedError:
+        # One brief retry before surfacing an error: a cut-off reply is
+        # usually a verbosity problem, not a broken request.
+        raw = await client.complete_json(
+            system=CHAT_SYSTEM,
+            user=(
+                'The previous reply was cut off for length. Be brief: '
+                'answer in under 80 words.\n' + user_text
+            ),
+            schema_name='chat',
+            schema=_ChatModelOutput.model_json_schema(),
+        )
     try:
         parsed = parse_model_output(raw)
         actions = validate_actions(

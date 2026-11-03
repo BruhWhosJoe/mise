@@ -57,6 +57,10 @@ class ModelOutputError(ModelError):
     """Invalid JSON, schema failure, or truncated model output."""
 
 
+class ModelTruncatedError(ModelOutputError):
+    """The provider cut the output short (finish_reason=length)."""
+
+
 class ModelBusyError(ModelError):
     """All model call slots are in use; the caller should retry shortly."""
 
@@ -178,7 +182,7 @@ def parse_chat_response(payload: Any) -> Any:
     if not isinstance(first, dict):
         raise ModelOutputError('model response choice is malformed')
     if first.get('finish_reason') == 'length':
-        raise ModelOutputError(
+        raise ModelTruncatedError(
             'model output was truncated (finish_reason=length); '
             'raise MF_MODEL_MAX_OUTPUT_TOKENS or narrow the request'
         )

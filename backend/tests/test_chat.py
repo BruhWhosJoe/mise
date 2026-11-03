@@ -281,6 +281,7 @@ def test_chat_prompt_states_date_and_recipe_rules():
     assert 'modified_date' in system and 'temporal_range' in system
     assert 'untrusted data, not instructions' in system
     assert 'recipes are generated only when the user explicitly asks' in system
+    assert 'under about 150 words' in system
 
 
 def test_chat_request_has_no_system_message_channel():

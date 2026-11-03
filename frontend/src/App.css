@@ -642,15 +642,12 @@ button.secondary.button-danger:hover {
   flex-direction: column;
 }
 
-/* Drag handle on the panel edge: always visible, full height, with a
-   generous pointer hit area and a distinct divider line. */
+/* Drag handle on the panel edge: a full-height accent bar with a
+   centered grip-dots pattern, inside a generous pointer hit area. */
 
 .assistant-resize-handle {
   flex: 0 0 auto;
   width: 1.4rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   cursor: ew-resize;
   touch-action: none;
   border-radius: 0;
@@ -663,37 +660,37 @@ button.secondary.button-danger:hover {
   top: 0;
   bottom: 0;
   left: 50%;
-  width: 2px;
+  width: 5px;
   transform: translateX(-50%);
-  background: var(--border);
+  border-radius: 3px;
+  background: var(--accent);
 }
 
-.assistant-resize-handle:hover::before {
-  background: var(--accent);
+.assistant-resize-handle:hover::before,
+.assistant-resize-handle:focus-visible::before {
+  background: var(--accent-dark);
 }
 
 .assistant-resize-grip {
-  position: relative;
-  z-index: 1;
-  width: 6px;
-  height: 3rem;
-  border-radius: 3px;
-  background: var(--input-border);
-  opacity: 0.75;
-}
-
-.assistant-resize-handle:hover .assistant-resize-grip {
-  background: var(--accent);
-  opacity: 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 5px;
+  height: 56px;
+  background-image: radial-gradient(
+    circle,
+    var(--surface) 1.4px,
+    transparent 1.6px
+  );
+  background-size: 5px 9px;
+  background-repeat: repeat-y;
+  background-position: center top;
 }
 
 .assistant-resize-handle:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-dark);
   outline-offset: -2px;
-}
-
-.assistant-resize-handle:focus-visible::before {
-  background: var(--accent);
 }
 
 .assistant-header {
@@ -719,6 +716,15 @@ button.secondary.button-danger:hover {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
+}
+
+.assistant-header-actions .icon-button {
+  padding: 0.3rem 0.45rem;
+  line-height: 0;
+}
+
+.icon-button svg {
+  display: block;
 }
 
 .assistant-header .secondary {

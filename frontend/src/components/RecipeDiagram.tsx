@@ -18,6 +18,9 @@ function RecipeDiagram({ recipe }: { recipe: RecipeResponse }) {
   const listId = useId()
   const graph = useMemo(() => buildRecipeGraph(recipe), [recipe])
   const { nodes, links } = graph
+  // Stacked arcs need room to read: with fewer than 3 datasets the figure
+  // is hidden and the relationship list below carries the same facts.
+  const showDiagram = nodes.length >= 3
 
   const height = TOP_PAD * 2 + nodes.length * ROW_H
   const edgeReach =
@@ -36,13 +39,21 @@ function RecipeDiagram({ recipe }: { recipe: RecipeResponse }) {
   )
 
   return (
-    <section aria-labelledby={titleId} className="recipe-diagram">
-      <h3 id={titleId}>How the datasets relate</h3>
-      <p className="sample-note">
-        Derived only from this generated recipe: datasets used together in a
-        workflow step, plus proposed combinations (dashed, clearly marked).
-      </p>
-      <figure className="recipe-figure">
+    <section
+      aria-labelledby={showDiagram ? titleId : listId}
+      className="recipe-diagram"
+    >
+      {showDiagram && (
+        <>
+          <h3 id={titleId}>How the datasets relate</h3>
+          <p className="sample-note">
+            Derived only from this generated recipe: datasets used together
+            in a workflow step, plus proposed combinations (dashed, clearly
+            marked).
+          </p>
+        </>
+      )}
+      {showDiagram && <figure className="recipe-figure">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="recipe-svg"
@@ -143,6 +154,7 @@ function RecipeDiagram({ recipe }: { recipe: RecipeResponse }) {
           </span>
         </figcaption>
       </figure>
+      }
       <h4 className="recipe-rel-heading">Relationships in this recipe</h4>
       {links.length === 0 ? (
         <p className="sample-note" id={listId}>

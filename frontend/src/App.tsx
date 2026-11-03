@@ -219,7 +219,7 @@ function Shell() {
             maxWidth={maxAssistantWidth(viewportWidth)}
             onChange={setAssistantWidth}
           />
-          <AssistantPanel maxWidth={maxAssistantWidth(viewportWidth)} />
+          <AssistantPanel />
         </aside>
       )}
     </div>

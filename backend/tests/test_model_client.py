@@ -8,6 +8,7 @@ from app.model_client import (
     ModelOutputError,
     ModelRateLimitError,
     ModelSettings,
+    ModelTruncatedError,
     ModelUpstreamError,
     build_chat_body,
     check_configured,
@@ -115,6 +116,9 @@ def test_parse_chat_response_joins_list_content():
 def test_parse_chat_response_rejects_truncated():
     with pytest.raises(ModelOutputError, match='truncated'):
         parse_chat_response(_response('{"a":', finish_reason='length'))
+    with pytest.raises(ModelTruncatedError, match='truncated'):
+        parse_chat_response(_response('{"a":', finish_reason='length'))
+    assert issubclass(ModelTruncatedError, ModelOutputError)
 
 
 def test_parse_chat_response_rejects_empty_and_malformed():

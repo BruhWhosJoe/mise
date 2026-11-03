@@ -339,3 +339,29 @@ def test_recipe_generate_maps_not_configured(client, monkeypatch):
     )
     assert response.status_code == 503
     assert response.json()['detail']['code'] == 'ai_not_configured'
+
+
+def test_chat_message_retries_truncation_once_with_brief_note(
+    client, monkeypatch
+):
+    monkeypatch.setenv('MF_MODEL_API_KEY', 'test-key')
+    users: list[str] = []
+
+    async def fake_complete(self, **kwargs):
+        users.append(kwargs.get('user', ''))
+        if len(users) == 1:
+            raise model_client.ModelTruncatedError('cut off')
+        return {
+            'reply': 'Hello! Ask me about your datasets.',
+            'actions': [],
+            'suggested_question': None,
+        }
+
+    monkeypatch.setattr(model_client.ModelClient, 'complete_json', fake_complete)
+    response = client.post(
+        '/api/chat/message', json={'message': 'Hi', 'investigation_id': 'inv-1'}
+    )
+    assert response.status_code == 200
+    assert len(users) == 2
+    assert 'Be brief' in users[1]
+    assert response.json()['reply'].startswith('Hello!')

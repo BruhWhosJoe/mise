@@ -1,12 +1,8 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { SCENARIOS } from '../data/fixtures'
 import { useWorkspace } from '../state/useWorkspace'
-import {
-  ASSISTANT_DEFAULT_WIDTH,
-  ASSISTANT_MIN_WIDTH,
-  isRecipeStale,
-} from '../state/workspaceReducer'
+import { isRecipeStale } from '../state/workspaceReducer'
 import { nextAction } from '../utils/guidance'
 
 /** Starter questions: prefill the central box, never submit or chat. */
@@ -21,13 +17,12 @@ const PRESETS = [
       ?.exampleQuestion ?? '',
 }))
 
-function AssistantPanel({ maxWidth }: { maxWidth: number }) {
+function AssistantPanel() {
   const {
     state,
     setView,
     setDraft,
     setAssistantOpen,
-    setAssistantWidth,
     sendChat,
     retryChat,
     undoChatApplied,
@@ -35,10 +30,6 @@ function AssistantPanel({ maxWidth }: { maxWidth: number }) {
     clearChatError,
   } = useWorkspace()
   const assistant = state.assistant
-  // Width to return to when leaving the expanded size (the pre-expand width
-  // when it was a deliberate choice, else the default).
-  const restoreWidthRef = useRef<number>(ASSISTANT_DEFAULT_WIDTH)
-  const expanded = assistant.width >= maxWidth - 1
   const selectionCount = state.liveSelected.length
   const hasResults = state.aiSearch.result !== null
   const guidance = nextAction({
@@ -66,25 +57,6 @@ function AssistantPanel({ maxWidth }: { maxWidth: number }) {
     setView('discover')
   }
 
-  function toggleExpanded() {
-    if (expanded) {
-      const restore = restoreWidthRef.current
-      setAssistantWidth(
-        restore >= ASSISTANT_MIN_WIDTH && restore < maxWidth
-          ? restore
-          : ASSISTANT_DEFAULT_WIDTH,
-      )
-    } else {
-      if (
-        assistant.width >= ASSISTANT_MIN_WIDTH &&
-        assistant.width < maxWidth
-      ) {
-        restoreWidthRef.current = assistant.width
-      }
-      setAssistantWidth(maxWidth)
-    }
-  }
-
   return (
     <div className="assistant-inner">
       <div className="assistant-header">
@@ -92,21 +64,29 @@ function AssistantPanel({ maxWidth }: { maxWidth: number }) {
         <div className="assistant-header-actions">
           <button
             type="button"
-            className="secondary small"
-            aria-expanded={expanded}
-            aria-label={expanded ? 'Narrow assistant panel' : 'Widen assistant panel'}
-            onClick={toggleExpanded}
-          >
-            {expanded ? 'Narrow' : 'Widen'}
-          </button>
-          <button
-            type="button"
-            className="secondary small"
+            className="secondary small icon-button"
+            aria-label="Hide assistant"
+            title="Hide assistant"
             aria-expanded="true"
             aria-controls="assistant-panel"
             onClick={() => setAssistantOpen(false)}
           >
-            Hide
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M5 2.5 L9.5 7 L5 11.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
         </div>
       </div>
