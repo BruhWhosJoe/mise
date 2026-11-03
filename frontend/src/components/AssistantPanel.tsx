@@ -213,11 +213,36 @@ function AssistantPanel() {
                   {message.role === 'user' ? 'You' : 'Assistant'}
                 </span>
                 <p>{message.text}</p>
+                {message.role === 'assistant' &&
+                  message.changeSummary != null && (
+                    <div className="chat-change" role="status">
+                      <p>{message.changeSummary}</p>
+                      {state.chatApplied?.messageId === message.id && (
+                        <button
+                          type="button"
+                          className="secondary small"
+                          onClick={undoChatApplied}
+                        >
+                          Undo
+                        </button>
+                      )}
+                    </div>
+                  )}
               </li>
             ))}
           </ol>
         )}
-        {loading && <p aria-live="polite">Thinking…</p>}
+        {loading && (
+          <div className="chat-assistant chat-typing" role="status">
+            <span className="chat-role">Assistant</span>
+            <span className="typing-dots" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="visually-hidden">Assistant is typing…</span>
+          </div>
+        )}
         {assistant.chatStatus === 'error' && (
           <div className="notice" role="alert">
             <p>{assistant.chatError ?? 'The assistant failed.'}</p>
@@ -237,20 +262,6 @@ function AssistantPanel() {
                 Dismiss
               </button>
             </div>
-          </div>
-        )}
-        {assistant.lastChangeSummary !== null && (
-          <div className="notice notice-inline" role="status">
-            <p>{assistant.lastChangeSummary}</p>
-            {state.chatApplied !== null && (
-              <button
-                type="button"
-                className="secondary small"
-                onClick={undoChatApplied}
-              >
-                Undo
-              </button>
-            )}
           </div>
         )}
         {assistant.suggestedQuestion !== null && (

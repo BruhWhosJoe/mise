@@ -18,7 +18,7 @@ import {
 import type { ChatContextRecommendation, LiveRecord } from '../services/api'
 import type { View } from '../types'
 import type { DiscoverySort } from '../utils/discoveryFilter'
-import { scoredValue, visibleRecommendations } from '../utils/discoveryFilter'
+import { scoredValue, sortRecommendations } from '../utils/discoveryFilter'
 import { loadWorkspace, saveWorkspace } from './persistence'
 import { WorkspaceContext } from './useWorkspace'
 import {
@@ -77,22 +77,24 @@ function readViewportWidth(): number | null {
   }
 }
 
-/** Snapshot the chat service reasons over: visible rank order + membership. */
+/** Snapshot the chat service reasons over: full rank order + membership. */
 function buildChatBody(
   snapshot: WorkspaceState,
   message: string,
   investigationId: string,
   requestId: number,
 ) {
-  // The chat service reasons over this snapshot only (the exact visible
-  // ranked order plus collection membership); it never refetches the
-  // catalog per message.
+  // The chat service reasons over this snapshot only (the full ranked
+  // order plus collection membership); it never refetches the catalog per
+  // message. Display filters only affect what the user sees: the
+  // assistant always reasons over the whole result set in relevance
+  // order, so "top N" never depends on the current threshold or sort.
   const result = snapshot.aiSearch.result
-  const visible = result
-    ? visibleRecommendations(result.recommendations, snapshot.discoveryUI)
+  const ranked = result
+    ? sortRecommendations(result.recommendations, 'score-desc')
     : []
   const recommendations: ChatContextRecommendation[] = []
-  for (const item of visible) {
+  for (const item of ranked) {
     const id = item.record.assigned_id
     if (id === null || id.trim() === '') continue
     // Unscored rows are left out of the chat context: a missing score is a

@@ -121,7 +121,7 @@ def test_parse_model_output_rejects_empty_or_oversized_reply():
 def test_validate_actions_accepts_readonly_ops():
     actions = validate_actions(
         [_action(op='explain', assigned_ids=['a'])],
-        visible_ids=['a', 'b'],
+        ranked_ids=['a', 'b'],
         selected_ids=['a'],
     )
     assert actions == [
@@ -129,7 +129,7 @@ def test_validate_actions_accepts_readonly_ops():
     ]
     actions = validate_actions(
         [_action(op='compare', assigned_ids=['a', 'b'])],
-        visible_ids=['a'],
+        ranked_ids=['a'],
         selected_ids=['b'],
     )
     assert actions[0].op == 'compare'
@@ -139,25 +139,25 @@ def test_validate_actions_rejects_unknown_ids():
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='explain', assigned_ids=['ghost'])],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='compare', assigned_ids=['a', 'ghost'])],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='add', assigned_ids=['ghost'])],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='remove', assigned_ids=['a'])],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
 
@@ -166,43 +166,43 @@ def test_validate_actions_rejects_malformed_params():
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='teleport', assigned_ids=[])],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='explain', assigned_ids=[])],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='compare', assigned_ids=['a'])],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='select_top', assigned_ids=[], count=0)],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='select_top', assigned_ids=[], count=5)],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='refine', assigned_ids=[])],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
     with pytest.raises(ModelOutputError):
         validate_actions(
             [_action(op='refine', assigned_ids=[], min_score=101)],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
     # Too many IDs in one action.
@@ -214,7 +214,7 @@ def test_validate_actions_rejects_malformed_params():
                     assigned_ids=[f'id-{i}' for i in range(11)],
                 )
             ],
-            visible_ids=[f'id-{i}' for i in range(11)],
+            ranked_ids=[f'id-{i}' for i in range(11)],
             selected_ids=[],
         )
 
@@ -222,7 +222,7 @@ def test_validate_actions_rejects_malformed_params():
 def test_validate_actions_allows_single_mutation_only():
     actions = validate_actions(
         [_action(op='select_top', assigned_ids=[], count=2)],
-        visible_ids=['a', 'b', 'c'],
+        ranked_ids=['a', 'b', 'c'],
         selected_ids=[],
     )
     assert actions[0].count == 2
@@ -232,7 +232,7 @@ def test_validate_actions_allows_single_mutation_only():
                 _action(op='add', assigned_ids=['a']),
                 _action(op='remove', assigned_ids=['a']),
             ],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=['a'],
         )
     with pytest.raises(ModelOutputError):
@@ -241,7 +241,7 @@ def test_validate_actions_allows_single_mutation_only():
                 _action(op='clarify', assigned_ids=[]),
                 _action(op='add', assigned_ids=['a']),
             ],
-            visible_ids=['a'],
+            ranked_ids=['a'],
             selected_ids=[],
         )
 
@@ -270,8 +270,8 @@ def test_build_user_payload_bounds_card_text():
         filters=ChatFilters(),
         history=[{'role': 'user', 'text': 'hi'}],
     )
-    assert payload['visible_count'] == 1
-    assert len(payload['visible_recommendations_in_rank_order'][0]['why']) <= 500
+    assert payload['ranked_count'] == 1
+    assert len(payload['ranked_recommendations'][0]['why']) <= 500
     assert payload['current_filters']['min_score'] == 85
 
 
@@ -310,3 +310,213 @@ def test_chat_stays_distinct_from_recipe_and_catalog():
         'fetch_layer_metadata',
     ):
         assert forbidden not in source
+
+
+def test_chat_prompt_describes_ranked_scope():
+    system = chat.CHAT_SYSTEM
+    assert 'select the top N ranked results' in system
+    assert 'supplied ranked list' in system
+    assert 'currently visible' not in system
+
+
+def test_parse_mutating_intent_select_top():
+    from app.chat import parse_mutating_intent
+
+    assert parse_mutating_intent(
+        'can you add the first 3 datasets to my data recipe?'
+    ) == {'op': 'select_top', 'count': 3}
+    assert parse_mutating_intent('Select the top 5 please') == {
+        'op': 'select_top',
+        'count': 5,
+    }
+    assert parse_mutating_intent('pick the top two') == {
+        'op': 'select_top',
+        'count': 2,
+    }
+    assert parse_mutating_intent('add all') == {
+        'op': 'select_top',
+        'count': None,
+    }
+    assert parse_mutating_intent('Please select them all.') == {
+        'op': 'select_top',
+        'count': None,
+    }
+
+
+def test_parse_mutating_intent_remove_and_undo():
+    from app.chat import parse_mutating_intent
+
+    assert parse_mutating_intent('remove the first 2') == {
+        'op': 'remove',
+        'count': 2,
+    }
+    assert parse_mutating_intent('clear selection') == {
+        'op': 'remove',
+        'count': None,
+    }
+    assert parse_mutating_intent('Deselect all, please') == {
+        'op': 'remove',
+        'count': None,
+    }
+    assert parse_mutating_intent('undo') == {'op': 'undo', 'count': None}
+    assert parse_mutating_intent('please undo that change') == {
+        'op': 'undo',
+        'count': None,
+    }
+
+
+def test_parse_mutating_intent_ignores_questions_and_vague_text():
+    from app.chat import parse_mutating_intent
+
+    assert parse_mutating_intent('how do I add the top 3?') is None
+    assert parse_mutating_intent("don't add the top 3 yet") is None
+    assert parse_mutating_intent('how do I undo my last change?') is None
+    assert parse_mutating_intent('explain the top 3 results') is None
+    assert parse_mutating_intent('compare the first two datasets') is None
+    assert parse_mutating_intent('remove the crash dataset') is None
+    assert parse_mutating_intent('what affects pedestrian safety?') is None
+    assert parse_mutating_intent(42) is None
+
+
+def test_synthesize_fallback_action_clamps_and_validates():
+    from app.chat import synthesize_fallback_action
+
+    action = synthesize_fallback_action(
+        {'op': 'select_top', 'count': 10},
+        ranked_ids=['a', 'b'],
+        selected_ids=[],
+    )
+    assert action is not None
+    assert (action.op, action.count) == ('select_top', 2)
+    action = synthesize_fallback_action(
+        {'op': 'select_top', 'count': None},
+        ranked_ids=['a', 'b', 'c'],
+        selected_ids=[],
+    )
+    assert action is not None and action.count == 3
+    assert (
+        synthesize_fallback_action(
+            {'op': 'select_top', 'count': 3},
+            ranked_ids=[],
+            selected_ids=[],
+        )
+        is None
+    )
+    action = synthesize_fallback_action(
+        {'op': 'remove', 'count': None},
+        ranked_ids=['a'],
+        selected_ids=['a', 'b'],
+    )
+    assert action is not None and action.assigned_ids == ['a', 'b']
+    action = synthesize_fallback_action(
+        {'op': 'remove', 'count': 1},
+        ranked_ids=['a', 'b'],
+        selected_ids=['a', 'b'],
+    )
+    assert action is not None and action.assigned_ids == ['a']
+    assert (
+        synthesize_fallback_action(
+            {'op': 'remove', 'count': None},
+            ranked_ids=['a'],
+            selected_ids=[],
+        )
+        is None
+    )
+    action = synthesize_fallback_action(
+        {'op': 'undo', 'count': None}, ranked_ids=[], selected_ids=[]
+    )
+    assert action is not None and action.op == 'undo'
+    assert (
+        synthesize_fallback_action(None, ranked_ids=['a'], selected_ids=[])
+        is None
+    )
+
+
+def test_reply_claims_change_detects_claims_only():
+    from app.chat import reply_claims_change
+
+    assert reply_claims_change('Adding the first 3 ranked datasets...')
+    assert reply_claims_change("I've added the top 3 to your collection.")
+    assert reply_claims_change('Removed the old dataset as requested.')
+    assert reply_claims_change('Here you go. Adding the top 2 now.')
+    assert not reply_claims_change('You have 3 selected datasets.')
+    assert not reply_claims_change(
+        'Selected datasets appear in your collection panel.'
+    )
+    assert not reply_claims_change('The top 3 cover crashes and schools.')
+    assert not reply_claims_change('I see two crash datasets in the list.')
+
+
+def test_resolve_chat_response_attaches_fallback_for_clear_commands():
+    from app.chat import resolve_chat_response
+
+    reply, actions = resolve_chat_response(
+        message='can you add the first 3 datasets to my data recipe?',
+        reply='Adding the first 3 ranked datasets...',
+        actions=[],
+        ranked_ids=['a', 'b', 'c', 'd'],
+        selected_ids=[],
+    )
+    assert [action.op for action in actions] == ['select_top']
+    assert actions[0].count == 3
+    # The model's claiming reply is now true, so it stands.
+    assert reply == 'Adding the first 3 ranked datasets...'
+    # No claim in the reply: the action still attaches (the change summary
+    # shown under the reply communicates what happened).
+    reply, actions = resolve_chat_response(
+        message='select top 2',
+        reply='The top 2 cover crashes and schools.',
+        actions=[],
+        ranked_ids=['a', 'b', 'c'],
+        selected_ids=[],
+    )
+    assert [action.op for action in actions] == ['select_top']
+    assert reply == 'The top 2 cover crashes and schools.'
+
+
+def test_resolve_chat_response_rewrites_unapplied_claims():
+    from app.chat import resolve_chat_response
+
+    # Claimed a removal for an empty collection: plain failure note.
+    reply, actions = resolve_chat_response(
+        message='clear selection',
+        reply='Removed everything from your collection.',
+        actions=[],
+        ranked_ids=['a'],
+        selected_ids=[],
+    )
+    assert actions == []
+    assert 'empty' in reply
+    assert 'Removed' not in reply
+    # Nothing ranked to select: guided failure note.
+    reply, actions = resolve_chat_response(
+        message='add the top 3',
+        reply='Adding the top 3 now.',
+        actions=[],
+        ranked_ids=[],
+        selected_ids=[],
+    )
+    assert actions == []
+    assert 'no ranked recommendations' in reply
+    # Model's own mutating action survives: untouched.
+    existing = [ChatAction(op='add', assigned_ids=['a'])]
+    reply, actions = resolve_chat_response(
+        message='add the crash dataset',
+        reply='Added the crash dataset.',
+        actions=existing,
+        ranked_ids=['a'],
+        selected_ids=[],
+    )
+    assert actions == existing
+    assert reply == 'Added the crash dataset.'
+    # Claim disagrees with the attached fallback: say what will happen.
+    reply, actions = resolve_chat_response(
+        message='add the top 2',
+        reply='Removed the 2 oldest datasets.',
+        actions=[],
+        ranked_ids=['a', 'b', 'c'],
+        selected_ids=[],
+    )
+    assert [action.op for action in actions] == ['select_top']
+    assert 'Removed' not in reply
+    assert 'top 2' in reply

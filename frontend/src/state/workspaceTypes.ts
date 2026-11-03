@@ -23,6 +23,11 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   text: string
   at: number
+  /**
+   * Change applied alongside this reply, shown directly under it. Absent
+   * on older saves and on replies that changed nothing.
+   */
+  changeSummary?: string | null
 }
 
 /**
@@ -62,6 +67,8 @@ export interface AssistantUIState {
 export interface ChatAppliedChange {
   id: string
   summary: string
+  /** The reply this change was applied alongside (for its Undo button). */
+  messageId: string
   previousSelection: LiveRecord[]
   previousMeta: Record<string, SelectionMeta>
   previousDiscoveryUI: DiscoveryUIState

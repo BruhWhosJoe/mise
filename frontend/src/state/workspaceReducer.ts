@@ -5,11 +5,13 @@ import {
   DEFAULT_MIN_RELEVANCE,
   clampMinScore,
   isDiscoverySort,
-  visibleRecommendations,
+  scoredValue,
+  sortRecommendations,
 } from '../utils/discoveryFilter'
 import type {
   CatalogUIState,
   ChatAppliedChange,
+  ChatMessage,
   DiscoveryUIState,
   SelectionMeta,
   WorkspaceAction,
@@ -273,10 +275,12 @@ function snapshotChatApplied(
   state: WorkspaceState,
   summary: string,
   at: number,
+  messageId: string,
 ): ChatAppliedChange {
   return {
     id: `chat-${at.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     summary,
+    messageId,
     previousSelection: state.liveSelected,
     previousMeta: state.selectionMeta,
     previousDiscoveryUI: { ...state.discoveryUI },
@@ -809,21 +813,23 @@ export function workspaceReducer(
             typeof raw.count === 'number' && Number.isFinite(raw.count)
               ? Math.floor(raw.count)
               : 0
+          // Rank order, never the display order: filters and sort only
+          // affect what the user sees. Unscored rows cannot be ranked, so
+          // they are left out (the backend never sends them as context).
           const recommendations = state.aiSearch.result?.recommendations ?? []
-          const visible = visibleRecommendations(
-            recommendations,
-            state.discoveryUI,
-          ).slice(0, Math.max(0, count))
+          const ranked = sortRecommendations(recommendations, 'score-desc')
+            .filter((item) => scoredValue(item) !== null)
+            .slice(0, Math.max(0, count))
           const known = new Set(
             state.liveSelected.map((item) => item.assigned_id),
           )
-          const fresh = visible.filter(
+          const fresh = ranked.filter(
             (item) =>
               item.record.assigned_id !== null &&
               !known.has(item.record.assigned_id),
           )
-          if (count < 1 || visible.length === 0) {
-            summary = 'There are no visible recommendations to select.'
+          if (count < 1 || ranked.length === 0) {
+            summary = 'There are no scored recommendations to select yet.'
           } else if (fresh.length === 0) {
             summary =
               'Those recommendations are already in your collection.'
@@ -831,8 +837,13 @@ export function workspaceReducer(
             const noun = fresh.length === 1 ? 'dataset' : 'datasets'
             summary =
               `Added ${fresh.length} ${noun} to your collection ` +
-              `(top ${visible.length} visible).`
-            chatApplied = snapshotChatApplied(state, summary, action.at)
+              `(top ${ranked.length} by relevance).`
+            chatApplied = snapshotChatApplied(
+              state,
+              summary,
+              action.at,
+              action.reply.id,
+            )
             const nextMeta: Record<string, SelectionMeta> = {
               ...selectionMeta,
             }
@@ -870,7 +881,12 @@ export function workspaceReducer(
           } else {
             const noun = fresh.length === 1 ? 'dataset' : 'datasets'
             summary = `Added ${fresh.length} ${noun} to your collection.`
-            chatApplied = snapshotChatApplied(state, summary, action.at)
+            chatApplied = snapshotChatApplied(
+              state,
+              summary,
+              action.at,
+              action.reply.id,
+            )
             const nextMeta: Record<string, SelectionMeta> = {
               ...selectionMeta,
             }
@@ -900,7 +916,12 @@ export function workspaceReducer(
           } else {
             const noun = removedCount === 1 ? 'dataset' : 'datasets'
             summary = `Removed ${removedCount} ${noun} from your collection.`
-            chatApplied = snapshotChatApplied(state, summary, action.at)
+            chatApplied = snapshotChatApplied(
+              state,
+              summary,
+              action.at,
+              action.reply.id,
+            )
             const nextMeta: Record<string, SelectionMeta> = {
               ...selectionMeta,
             }
@@ -943,7 +964,12 @@ export function workspaceReducer(
               ? `Narrowed the recommendations to relevance ${nextMin} ` +
                 'and above.'
               : 'Re-sorted the current recommendations.'
-            chatApplied = snapshotChatApplied(state, summary, action.at)
+            chatApplied = snapshotChatApplied(
+              state,
+              summary,
+              action.at,
+              action.reply.id,
+            )
             discoveryUI = {
               ...state.discoveryUI,
               minScore: nextMin,
@@ -964,12 +990,27 @@ export function workspaceReducer(
             summary = 'The recommendation filters are already at defaults.'
           } else {
             summary = 'Reset the recommendation filters to their defaults.'
-            chatApplied = snapshotChatApplied(state, summary, action.at)
+            chatApplied = snapshotChatApplied(
+              state,
+              summary,
+              action.at,
+              action.reply.id,
+            )
             discoveryUI = defaults
           }
           break
         }
       }
+      // The change summary travels with its own reply, so it always
+      // renders directly under the response that applied it.
+      const withSummary =
+        summary === null
+          ? trimmed
+          : trimmed.map((entry) =>
+              entry.id === action.reply.id
+                ? { ...entry, changeSummary: summary }
+                : entry,
+            )
       return {
         ...state,
         liveSelected,
@@ -980,7 +1021,7 @@ export function workspaceReducer(
         chatApplied,
         assistant: {
           ...state.assistant,
-          messages: trimmed,
+          messages: withSummary,
           chatStatus: 'idle',
           chatError: null,
           suggestedQuestion:
@@ -1040,6 +1081,20 @@ export function workspaceReducer(
     case 'chat-undo-applied': {
       const applied = state.chatApplied
       if (applied === null) return state
+      // The undo lands in the conversation as its own message: the
+      // original reply keeps its summary as history, and the "Undid"
+      // note makes clear the change no longer holds.
+      const undone: ChatMessage = {
+        id: `undo-${applied.id}`,
+        role: 'assistant',
+        text: `Undid: ${applied.summary}`,
+        at: applied.at,
+      }
+      const messages = [...state.assistant.messages, undone]
+      const trimmed =
+        messages.length > MAX_CHAT_MESSAGES
+          ? messages.slice(messages.length - MAX_CHAT_MESSAGES)
+          : messages
       return {
         ...state,
         liveSelected: applied.previousSelection,
@@ -1048,6 +1103,7 @@ export function workspaceReducer(
         chatApplied: null,
         assistant: {
           ...state.assistant,
+          messages: trimmed,
           lastChangeSummary: `Undid: ${applied.summary}`,
         },
       }

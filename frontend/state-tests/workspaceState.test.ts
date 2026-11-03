@@ -1276,6 +1276,106 @@ describe('assistant chat turns', () => {
     assert.deepEqual(selectedIds(state), ['c'])
   })
 
+  it('select-top uses rank order regardless of display filters', () => {
+    let state = chattedState()
+    // Narrow the display to the single 99+ row and re-sort by title:
+    // "top 2" must still mean the two highest-scored recommendations.
+    state = workspaceReducer(state, { type: 'set-min-score', minScore: 95 })
+    state = workspaceReducer(state, {
+      type: 'set-discovery-sort',
+      sort: 'title',
+    })
+    const result = state.aiSearch.result?.recommendations ?? []
+    assert.deepEqual(
+      visibleRecommendations(result, state.discoveryUI).map(
+        (item) => item.record.assigned_id,
+      ),
+      ['d'],
+    )
+    state = startChat(state, 1)
+    state = succeedChat(state, {
+      requestId: 1,
+      actions: [chatAction({ op: 'select_top', count: 2 })],
+    })
+    assert.deepEqual(selectedIds(state), ['d', 'a'])
+    assert.ok(
+      state.assistant.lastChangeSummary?.includes('top 2 by relevance'),
+    )
+  })
+
+  it('select-top skips rows without a usable score', () => {
+    let state = chattedState()
+    const unscored: DiscoveryRecommendation = {
+      ...makeScored('u', 'Mystery', 0),
+      relevance_score: Number.NaN,
+    }
+    const current = state.aiSearch.result
+    assert.notEqual(current, null)
+    if (current === null) return
+    state = {
+      ...state,
+      aiSearch: {
+        ...state.aiSearch,
+        result: makeMultiDiscovery('flood risk?', [
+          unscored,
+          ...current.recommendations,
+        ]),
+      },
+    }
+    state = startChat(state, 1)
+    state = succeedChat(state, {
+      requestId: 1,
+      actions: [chatAction({ op: 'select_top', count: 10 })],
+    })
+    // Only the four scored rows rank; the unscored row is never picked.
+    assert.deepEqual(selectedIds(state), ['d', 'a', 'b', 'c'])
+  })
+
+  it('attaches each change summary to its own reply', () => {
+    let state = startChat(chattedState(), 1)
+    state = succeedChat(state, {
+      requestId: 1,
+      actions: [chatAction({ op: 'select_top', count: 1 })],
+    })
+    const first = state.assistant.messages.find((entry) => entry.id === 'a-1')
+    assert.ok(first?.changeSummary?.includes('1 dataset'))
+    assert.equal(state.chatApplied?.messageId, 'a-1')
+    // A later readonly turn leaves the earlier summary (and its Undo)
+    // attached to the reply that applied it.
+    state = startChat(state, 2)
+    state = succeedChat(state, {
+      requestId: 2,
+      actions: [chatAction({ op: 'explain', assigned_ids: ['d'] })],
+    })
+    const second = state.assistant.messages.find(
+      (entry) => entry.id === 'a-2',
+    )
+    assert.equal(second?.changeSummary ?? null, null)
+    assert.equal(
+      state.assistant.messages.find((entry) => entry.id === 'a-1')
+        ?.changeSummary,
+      first?.changeSummary,
+    )
+    assert.equal(state.chatApplied?.messageId, 'a-1')
+  })
+
+  it('undoing a chat change appends an undo note to the conversation', () => {
+    let state = startChat(chattedState(), 1)
+    state = succeedChat(state, {
+      requestId: 1,
+      actions: [chatAction({ op: 'select_top', count: 2 })],
+    })
+    assert.deepEqual(selectedIds(state), ['d', 'a'])
+    state = workspaceReducer(state, { type: 'chat-undo-applied' })
+    assert.deepEqual(selectedIds(state), [])
+    assert.equal(state.chatApplied, null)
+    const last =
+      state.assistant.messages[state.assistant.messages.length - 1]
+    assert.equal(last?.role, 'assistant')
+    assert.ok(last?.text.startsWith('Undid:'))
+    assert.ok(last?.text.includes('2 datasets'))
+  })
+
   it('chat failures preserve the selection, filters, and recipe', () => {
     let state = investigatedState()
     state = workspaceReducer(state, { type: 'set-min-score', minScore: 90 })
