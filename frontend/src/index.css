@@ -1,29 +1,79 @@
-:root {
-  --bg: #0a1424;
-  --surface: #101e35;
-  --surface-raised: #16294a;
-  --border: #24405f;
-  --border-soft: #1a3049;
-  --text: #e8eef6;
-  --muted: #a9b9cf;
-  --accent: #2dd4bf;
-  --accent-strong: #5eead4;
-  --accent-dim: rgba(45, 212, 191, 0.12);
-  --accent-text-on-fill: #05302a;
-  --danger: #f08a8a;
-  --focus: #5eead4;
+/* Semantic theme variables. Light is the default (no data-theme needed);
+   dark overrides apply when documentElement has data-theme="dark".
+   Jonathan: adjust colors here; every component follows these names. */
 
-  --sans: system-ui, 'Segoe UI', Helvetica, Arial, sans-serif;
+:root {
+  --bg: #e7ecf3;
+  --surface: #ffffff;
+  --surface-raised: #dde4ee;
+  --text: #172033;
+  --text-secondary: #45536b;
+  --text-muted: #5a6a84;
+  --action: #1f5bd8;
+  --action-hover: #1849b0;
+  --text-on-action: #ffffff;
+  --accent: #6a4fd0;
+  --accent-soft: #efeafa;
+  --selected-surface: #e9efff;
+  --border: #cfd7e4;
+  --border-soft: #e2e8f1;
+  --input-border: #5a6a84;
+  --danger: #b3261e;
+  --success: #0f766e;
+  --warning: #8f5e00;
+  --info: #1f5bd8;
+  --focus: #1f5bd8;
+  --nav-bg: #141f3a;
+  --nav-text: #eef2f9;
+  --nav-muted: #a9b8d4;
+  --nav-hover: #22304f;
+  --nav-active: #2c3f68;
+  --focus-on-dark: #bcd0fb;
+
+  --sans:
+    'Manrope', system-ui, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial,
+    sans-serif;
   --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
-  color-scheme: dark;
+  color-scheme: light;
   font-family: var(--sans);
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.6;
   color: var(--text);
   background: var(--bg);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+:root[data-theme='dark'] {
+  --bg: #101216;
+  --surface: #1a1e24;
+  --surface-raised: #242a34;
+  --text: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #9aa7ba;
+  --action: #93b4ff;
+  --action-hover: #b0c8ff;
+  --text-on-action: #101827;
+  --accent: #b9a8f2;
+  --accent-soft: #262640;
+  --selected-surface: #202b43;
+  --border: #313945;
+  --border-soft: #232a35;
+  --input-border: #9aa7ba;
+  --danger: #f0a9a2;
+  --success: #5eead4;
+  --warning: #eec06a;
+  --info: #93b4ff;
+  --focus: #93b4ff;
+  --nav-bg: #0b0e15;
+  --nav-text: #f1f5f9;
+  --nav-muted: #9aa7ba;
+  --nav-hover: #1a2130;
+  --nav-active: #263049;
+  --focus-on-dark: #93b4ff;
+
+  color-scheme: dark;
 }
 
 *,
@@ -44,23 +94,24 @@ h1,
 h2,
 h3,
 h4 {
-  line-height: 1.25;
-  margin: 0 0 0.5rem;
-  font-weight: 650;
+  line-height: 1.22;
+  margin: 0 0 0.6rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 h1 {
-  font-size: 1.75rem;
-  letter-spacing: -0.01em;
+  font-size: 2rem;
 }
 
 h2 {
-  font-size: 1.25rem;
-  margin-top: 2rem;
+  font-size: 1.4rem;
+  margin-top: 2.25rem;
 }
 
 h3 {
-  font-size: 1.05rem;
+  font-size: 1.08rem;
+  margin-top: 1.5rem;
 }
 
 h4 {
@@ -89,18 +140,27 @@ textarea {
   border-radius: 4px;
 }
 
+a {
+  color: var(--action);
+  text-underline-offset: 2px;
+}
+
 button {
   cursor: pointer;
   border-radius: 6px;
   border: 1px solid transparent;
   padding: 0.6rem 1.1rem;
   font-weight: 600;
-  background: var(--accent);
-  color: var(--accent-text-on-fill);
+  background: var(--action);
+  color: var(--text-on-action);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 button:hover {
-  background: var(--accent-strong);
+  background: var(--action-hover);
 }
 
 button:disabled {
@@ -116,8 +176,8 @@ button.secondary {
 }
 
 button.secondary:hover {
-  border-color: var(--accent);
-  color: var(--accent-strong);
+  border-color: var(--action);
+  color: var(--action);
 }
 
 button.secondary:disabled:hover {
@@ -139,21 +199,39 @@ label {
 textarea,
 input[type='text'] {
   width: 100%;
-  background: var(--bg);
+  background: var(--surface);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid var(--input-border);
   border-radius: 6px;
   padding: 0.7rem 0.8rem;
 }
 
 textarea::placeholder {
-  color: var(--muted);
+  color: var(--text-muted);
+}
+
+select {
+  font: inherit;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+}
+
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--action);
 }
 
 input[type='checkbox'] {
   width: 1.1rem;
   height: 1.1rem;
-  accent-color: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {

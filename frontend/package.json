@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:state": "tsc -p state-tests/tsconfig.json && node -e \"require('fs').writeFileSync('state-tests/dist/package.json', '{\\n  \\\"type\\\": \\\"commonjs\\\"\\n}\\n')\" && node --test state-tests/dist/state-tests/workspaceState.test.js"
   },
   "dependencies": {
     "react": "^19.3.1",

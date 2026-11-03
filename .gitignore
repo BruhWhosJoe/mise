@@ -6,3 +6,6 @@ __pycache__/
 .env
 .env.*
 !.env.example
+pip-*/
+.pytest_cache/
+frontend/state-tests/dist/
