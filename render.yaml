@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: mise
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      # Secret: paste the Meta model key in the Render dashboard.
+      # Every other MF_* setting has a working default (see
+      # backend/.env.example); add overrides here only if needed.
+      - key: MF_MODEL_API_KEY
+        sync: false

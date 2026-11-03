@@ -259,6 +259,7 @@ def test_discovery_search_rejects_bad_question(client, monkeypatch):
         (model_client.ModelNotConfiguredError('set key'), 503, 'ai_not_configured'),
         (model_client.ModelAuthError('bad key'), 502, 'model_auth_failed'),
         (model_client.ModelRateLimitError('slow'), 429, 'model_rate_limited'),
+        (model_client.ModelBusyError('busy'), 429, 'model_busy'),
         (model_client.ModelTimeoutError('slow'), 504, 'model_timeout'),
         (model_client.ModelOutputError('bad json'), 502, 'model_output_invalid'),
         (model_client.ModelUpstreamError('5xx'), 502, 'model_upstream'),

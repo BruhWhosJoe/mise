@@ -47,11 +47,11 @@
 }
 
 .brand-mark-bowl {
-  stroke: var(--nav-bg);
+  stroke: var(--focus-on-dark);
 }
 
 .brand-mark-dot {
-  fill: var(--nav-bg);
+  fill: var(--nav-text);
 }
 
 .brand-name {
@@ -1363,8 +1363,12 @@ button.secondary.preset-active:hover {
 
 .chat-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
+}
+
+.chat-row button {
+  flex: 0 0 auto;
 }
 
 .chat-row input {

@@ -42,6 +42,12 @@ async def post_discovery_search(body: DiscoveryRequest) -> DiscoveryResponse:
         raise HTTPException(
             status_code=502, detail=_detail('model_upstream', str(exc))
         ) from exc
+    except model_client.ModelBusyError as exc:
+        raise HTTPException(
+            status_code=429,
+            detail=_detail('model_busy', str(exc)),
+            headers={'Retry-After': '10'},
+        ) from exc
     except model_client.ModelError as exc:
         raise HTTPException(
             status_code=502, detail=_detail('model_error', str(exc))

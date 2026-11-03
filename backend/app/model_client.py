@@ -57,6 +57,22 @@ class ModelOutputError(ModelError):
     """Invalid JSON, schema failure, or truncated model output."""
 
 
+class ModelBusyError(ModelError):
+    """All model call slots are in use; the caller should retry shortly."""
+
+
+MAX_CONCURRENT_MODEL_CALLS = 4
+MODEL_BUSY_MESSAGE = (
+    'The AI service is handling other requests right now — '
+    'please retry in a moment.'
+)
+
+# Process-wide cap: every ModelClient shares these slots. Only the
+# non-blocking fast path is ever used (see complete_json), so the
+# semaphore never binds to an event loop and tests stay isolated.
+_MODEL_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_MODEL_CALLS)
+
+
 @dataclass(frozen=True)
 class ModelSettings:
     base_url: str
@@ -230,6 +246,29 @@ class ModelClient:
         self._settings = settings or model_settings_from_env()
 
     async def complete_json(
+        self,
+        *,
+        system: str,
+        user: str,
+        schema_name: str | None = None,
+        schema: dict[str, Any] | None = None,
+    ) -> Any:
+        if _MODEL_SEMAPHORE.locked():
+            raise ModelBusyError(MODEL_BUSY_MESSAGE)
+        # Adjacent check-and-acquire with no suspension between: atomic on
+        # the event loop, so the cap can never over-admit.
+        await _MODEL_SEMAPHORE.acquire()
+        try:
+            return await self._complete_json_inner(
+                system=system,
+                user=user,
+                schema_name=schema_name,
+                schema=schema,
+            )
+        finally:
+            _MODEL_SEMAPHORE.release()
+
+    async def _complete_json_inner(
         self,
         *,
         system: str,
