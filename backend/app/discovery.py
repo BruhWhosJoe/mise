@@ -4,13 +4,17 @@ Pipeline (documented retrieval/ranking approach):
 1. Pull the full catalog through the bounded TTL cache (never just the
    browser's visible page). Partial retrieval is disclosed, never implied
    complete.
-2. Rank every cached record locally with transparent lexical matching over
-   titles, tags, publishers, types, and overviews. Lexical matching misses
-   synonyms and typos; it is a recall aid, not an exhaustive semantic
-   evaluation of every record.
-3. Ask the Meta model to interpret the goal and evaluate only those
+2. Expand the question once via a small model call into topical keywords
+   plus a separately detected place; on any failure fall back to the
+   question's own terms and disclose it.
+3. Rank every cached record locally with transparent whole-word matching
+   over titles, tags, publishers, types, and overviews, weighted by
+   per-snapshot IDF (ubiquitous terms score nothing) and field weights.
+   Lexical matching is a recall aid, not an exhaustive semantic evaluation
+   of every record.
+4. Ask the Meta model to interpret the goal and evaluate only those
    candidates (bounded context, one request plus at most one repair).
-4. Validate every model-returned ID against the candidates, enrich matches
+5. Validate every model-returned ID against the candidates, enrich matches
    from authoritative MCP records, and report coverage honestly.
 """
 
@@ -21,10 +25,11 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from . import catalog_cache, retrieval
+from . import catalog_cache, expansion, retrieval
 from .config import get_settings
 from .model_client import (
     ModelClient,
+    ModelError,
     ModelOutputError,
     check_configured,
     model_settings_from_env,
@@ -223,8 +228,22 @@ async def run_discovery(question: str) -> DiscoveryResponse:
     client = ModelClient(model_settings)
 
     snapshot = await catalog_cache.get_catalog_snapshot()
+    try:
+        expanded = await expansion.expand_query(cleaned, model_settings)
+        expansion_fallback = False
+    except ModelError:
+        # Expansion only adds recall: without it the question's own terms
+        # still rank, and coverage says exactly what happened.
+        expanded = None
+        expansion_fallback = True
+    idf = snapshot.idf_weights or retrieval.compute_idf(snapshot.records)
     retrieval_result = retrieval.retrieve_candidates(
-        cleaned, snapshot.records, settings.discovery_candidates
+        cleaned,
+        snapshot.records,
+        settings.discovery_candidates,
+        idf=idf,
+        expansion_terms=expanded.keywords if expanded else (),
+        place_terms=expanded.place if expanded else (),
     )
     user_payload = {
         'question': cleaned,
@@ -277,6 +296,17 @@ async def run_discovery(question: str) -> DiscoveryResponse:
         for record, item in matches
     ]
     partial = not snapshot.complete
+    retrieval_notes = list(snapshot.notes)
+    if expansion_fallback:
+        retrieval_notes.append(
+            'query expansion was unavailable; ranked on the '
+            'question terms only'
+        )
+    elif expanded is not None and expanded.keywords:
+        retrieval_notes.append(
+            'query expanded with '
+            f'{len(expanded.keywords)} topical term(s)'
+        )
     return DiscoveryResponse(
         question=cleaned,
         interpretation=Interpretation(
@@ -291,20 +321,26 @@ async def run_discovery(question: str) -> DiscoveryResponse:
         gaps=[text.strip() for text in parsed.gaps if text.strip()],
         coverage=DiscoveryCoverage(
             retrieval_note=(
-                'Lexical term matching over titles, tags, publishers, '
-                'types, and overviews; misses synonyms and typos. Model '
-                'evaluated the shortlist only, not every catalog record.'
+                'Whole-word term matching with per-catalog IDF weighting '
+                'over titles, tags, publishers, types, and overviews, plus '
+                'one model query-expansion call whose terms weigh slightly '
+                'less. Model evaluated the shortlist only, not every '
+                'catalog record.'
             ),
             catalog_total=snapshot.catalog_total,
             records_retrieved=len(snapshot.records),
             retrieval_complete=snapshot.complete,
-            retrieval_notes=list(snapshot.notes),
+            retrieval_notes=retrieval_notes,
             candidates_evaluated=len(retrieval_result.candidates),
             candidates_excluded_no_id=retrieval_result.excluded_no_id,
             model_dropped_unknown_ids=dropped,
             model_duplicates_removed=dupes,
             result_cap=settings.discovery_max_results,
             cap_applied=capped,
+            expanded_terms=(
+                list(expanded.keywords) if expanded is not None else []
+            ),
+            expansion_fallback=expansion_fallback,
         ),
         partial=partial,
         partial_reason=(

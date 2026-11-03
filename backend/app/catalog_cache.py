@@ -18,7 +18,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 
-from . import mcp_service, normalize
+from . import mcp_service, normalize, retrieval
 from .config import PREVIEW_FIELDS, get_settings
 from .models import CatalogRecord
 
@@ -32,6 +32,9 @@ class CatalogSnapshot:
     complete: bool
     notes: list[str] = field(default_factory=list)
     fetched_at: float = 0.0
+    # Per-term IDF weights computed once when the snapshot is built, so
+    # every question reuses them instead of rescanning the catalog.
+    idf_weights: dict[str, float] = field(default_factory=dict)
 
 
 _CACHE: CatalogSnapshot | None = None
@@ -177,4 +180,5 @@ async def _fetch_all() -> CatalogSnapshot:
         complete=complete,
         notes=notes,
         fetched_at=time.monotonic(),
+        idf_weights=retrieval.compute_idf(records),
     )

@@ -116,6 +116,8 @@ class DiscoveryCoverage(BaseModel):
     model_duplicates_removed: int = 0
     result_cap: int = 0
     cap_applied: bool = False
+    expanded_terms: list[str] = Field(default_factory=list)
+    expansion_fallback: bool = False
 
 
 class DiscoveryResponse(BaseModel):

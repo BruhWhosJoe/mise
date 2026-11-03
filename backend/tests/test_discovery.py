@@ -11,7 +11,7 @@ from app.discovery import (
     validate_question,
     validate_recommendations,
 )
-from app.model_client import ModelClient, ModelOutputError
+from app.model_client import ModelClient, ModelOutputError, ModelUpstreamError
 from app.models import CatalogRecord
 
 
@@ -235,13 +235,15 @@ def test_run_discovery_success(monkeypatch):
     async def fake_snapshot(**kwargs):
         return _snapshot(
             [
-                _record('1', title='Floodplains of DC'),
+                _record('1', title='Flood risk zones'),
                 _record('2', title='Bird counts'),
             ],
             total=2,
         )
 
     async def fake_complete(self, **kwargs):
+        if kwargs.get('schema_name') == 'expansion':
+            return {'keywords': ['inundation'], 'place': ['DC']}
         return {
             'interpretation': {'goal': 'Assess flood risk.', 'assumptions': []},
             'recommendations': [
@@ -264,7 +266,9 @@ def test_run_discovery_success(monkeypatch):
     assert response.question == 'flood risk in DC'
     assert response.interpretation.goal == 'Assess flood risk.'
     assert [rec.record.assigned_id for rec in response.recommendations] == ['1']
-    assert response.recommendations[0].record.title == 'Floodplains of DC'
+    assert response.recommendations[0].record.title == 'Flood risk zones'
+    assert response.coverage.expanded_terms == ['inundation']
+    assert response.coverage.expansion_fallback is False
     assert response.recommendations[0].relevance == 'direct'
     assert response.recommendations[0].relevance_score == 92
     assert response.coverage.records_retrieved == 2
@@ -303,10 +307,16 @@ def test_run_discovery_repairs_missing_score(monkeypatch):
 
     async def fake_snapshot(**kwargs):
         return _snapshot(
-            [_record('1', title='Floodplains of DC')], total=1
+            [
+                _record('1', title='Flood risk zones'),
+                _record('2', title='Bird counts'),
+            ],
+            total=2,
         )
 
     async def fake_complete(self, **kwargs):
+        if kwargs.get('schema_name') == 'expansion':
+            return {'keywords': ['inundation'], 'place': []}
         calls.append(kwargs.get('user', ''))
         if len(calls) == 1:
             return {
@@ -343,6 +353,8 @@ def test_run_discovery_repairs_missing_score(monkeypatch):
     assert len(calls) == 2
     assert 'rejected' in calls[1]
     assert response.recommendations[0].relevance_score == 88
+    assert response.coverage.expanded_terms == ['inundation']
+    assert response.coverage.expansion_fallback is False
 
 
 def test_run_discovery_marks_partial_retrieval(monkeypatch):
@@ -367,3 +379,89 @@ def test_run_discovery_marks_partial_retrieval(monkeypatch):
     response = _run(discovery.run_discovery('floods'))
     assert response.partial is True
     assert response.coverage.retrieval_complete is False
+
+
+def test_run_discovery_falls_back_when_expansion_fails(monkeypatch):
+    # A dead expansion call must not kill the search: the question's own
+    # terms still rank, and coverage discloses the fallback.
+    monkeypatch.setenv('MF_MODEL_API_KEY', 'test-key')
+
+    async def fake_snapshot(**kwargs):
+        return _snapshot(
+            [
+                _record('1', title='Flood risk zones'),
+                _record('2', title='Bird counts'),
+            ],
+            total=2,
+        )
+
+    async def fake_complete(self, **kwargs):
+        if kwargs.get('schema_name') == 'expansion':
+            raise ModelUpstreamError('expansion timed out')
+        return {
+            'interpretation': {'goal': 'g', 'assumptions': []},
+            'recommendations': [
+                {
+                    'assigned_id': '1',
+                    'relevance': 'direct',
+                    'relevance_score': 90,
+                    'why': 'Maps flood zones.',
+                    'limitations': [],
+                }
+            ],
+            'gaps': [],
+        }
+
+    monkeypatch.setattr(
+        catalog_cache, 'get_catalog_snapshot', fake_snapshot
+    )
+    monkeypatch.setattr(ModelClient, 'complete_json', fake_complete)
+    response = _run(discovery.run_discovery('flood risk in DC'))
+    assert [rec.record.assigned_id for rec in response.recommendations] == ['1']
+    assert response.coverage.expanded_terms == []
+    assert response.coverage.expansion_fallback is True
+    assert any(
+        'expansion was unavailable' in note
+        for note in response.coverage.retrieval_notes
+    )
+
+
+def test_run_discovery_expansion_terms_add_recall(monkeypatch):
+    # The expansion-only synonym reaches a record the raw question misses.
+    monkeypatch.setenv('MF_MODEL_API_KEY', 'test-key')
+
+    async def fake_snapshot(**kwargs):
+        return _snapshot(
+            [
+                _record('1', title='Inundation maps'),
+                _record('2', title='Bird counts'),
+            ],
+            total=2,
+        )
+
+    async def fake_complete(self, **kwargs):
+        if kwargs.get('schema_name') == 'expansion':
+            return {'keywords': ['inundation'], 'place': []}
+        return {
+            'interpretation': {'goal': 'g', 'assumptions': []},
+            'recommendations': [
+                {
+                    'assigned_id': '1',
+                    'relevance': 'direct',
+                    'relevance_score': 90,
+                    'why': 'Maps inundation.',
+                    'limitations': [],
+                }
+            ],
+            'gaps': [],
+        }
+
+    monkeypatch.setattr(
+        catalog_cache, 'get_catalog_snapshot', fake_snapshot
+    )
+    monkeypatch.setattr(ModelClient, 'complete_json', fake_complete)
+    response = _run(discovery.run_discovery('floods'))
+    assert response.coverage.candidates_evaluated == 1
+    assert [rec.record.assigned_id for rec in response.recommendations] == ['1']
+    assert response.coverage.expanded_terms == ['inundation']
+    assert response.coverage.expansion_fallback is False
