@@ -11,7 +11,7 @@ function RecipeView() {
 
       <LiveRecipe />
 
-      <section aria-labelledby="recipe-next-heading">
+      <section aria-labelledby="recipe-next-heading" className="panel">
         <h2 id="recipe-next-heading">About generated recipes</h2>
         <p>
           Generated recipes are proposed analysis plans, not executed

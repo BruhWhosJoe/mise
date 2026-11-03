@@ -9,7 +9,7 @@ import {
 import { useWorkspace } from '../state/useWorkspace'
 import { expandedKeyForRecord } from '../state/workspaceReducer'
 import CopyLinkButton from './CopyLinkButton'
-import { DatasetDetailSections, ExternalLink } from './DatasetDetails'
+import { DatasetDetailSections, OpenSourceButton } from './DatasetDetails'
 import LiveRecordCard from './LiveRecordCard'
 import {
   authoritativeLinks,
@@ -197,9 +197,9 @@ function Pagination({
 }
 
 /**
- * One dataset in the Review-selection collection: the same Open / Copy /
- * View-details actions as the cards, plus Remove. Full metadata loads only
- * when the reader opens details (cached per dataset), never per row.
+ * One dataset in the Review-selection collection: View details, Open, and
+ * Copy like the cards, plus Remove. Full metadata loads only when the
+ * reader opens details (cached per dataset), never per row.
  */
 function CollectionItem({
   record,
@@ -245,7 +245,7 @@ function CollectionItem({
       key={record.assigned_id ?? record.title ?? 'unknown'}
       className="recipe-item"
     >
-      <div>
+      <div className="collection-main">
         <h3>{title}</h3>
         <p className="dataset-meta">
           {record.organization_name ??
@@ -253,11 +253,20 @@ function CollectionItem({
             record.source ??
             'Source not provided'}
         </p>
-        <div className="dataset-links">
+        <div className="dataset-actions">
+          <button
+            type="button"
+            className="secondary small"
+            aria-expanded={open}
+            aria-controls={detailId}
+            disabled={!canExpand}
+            title={canExpand ? undefined : 'Details need a dataset ID'}
+            onClick={handleToggleOpen}
+          >
+            {open ? 'Hide details' : 'View details'}
+          </button>
           {links.sourcePage ? (
-            <ExternalLink href={links.sourcePage}>
-              Open source page
-            </ExternalLink>
+            <OpenSourceButton href={links.sourcePage} />
           ) : (
             <span className="not-provided">Source link not provided</span>
           )}
@@ -265,6 +274,14 @@ function CollectionItem({
             url={preferredShareLink(links)}
             itemLabel={title}
           />
+          <button
+            type="button"
+            className="secondary small"
+            onClick={() => onRemove(record)}
+            aria-label={`Remove ${title} from your dataset collection`}
+          >
+            Remove
+          </button>
         </div>
         {open && (
           <div id={detailId} className="dataset-details">
@@ -286,27 +303,6 @@ function CollectionItem({
             )}
           </div>
         )}
-      </div>
-      <div className="item-actions">
-        <button
-          type="button"
-          className="secondary small"
-          aria-expanded={open}
-          aria-controls={detailId}
-          disabled={!canExpand}
-          title={canExpand ? undefined : 'Details need a dataset ID'}
-          onClick={handleToggleOpen}
-        >
-          {open ? 'Hide details' : 'View details'}
-        </button>
-        <button
-          type="button"
-          className="secondary small"
-          onClick={() => onRemove(record)}
-          aria-label={`Remove ${title} from your dataset collection`}
-        >
-          Remove
-        </button>
       </div>
     </li>
   )
@@ -577,7 +573,7 @@ function LiveCatalog() {
       </div>
 
       {showSearch && catalogSearch && (
-        <section aria-labelledby="catalog-search-heading" aria-live="polite">
+        <section aria-labelledby="catalog-search-heading" aria-live="polite" className="panel">
           <h2 id="catalog-search-heading">Catalog search results</h2>
           <p role="status">
             {catalogSearch.returned} match
@@ -651,7 +647,7 @@ function LiveCatalog() {
       )}
 
       {!showSearch && !error && page !== null && page.records.length > 0 && (
-        <section aria-labelledby="live-results-heading" aria-live="polite">
+        <section aria-labelledby="live-results-heading" aria-live="polite" className="panel">
           <h2 id="live-results-heading">Catalog records</h2>
           {pagination('top', 'Catalog pages, top')}
           <ul className="dataset-list">
@@ -678,7 +674,7 @@ function LiveCatalog() {
       )}
 
       {reviewing && liveSelected.length > 0 && (
-        <section aria-labelledby="live-selection-heading">
+        <section aria-labelledby="live-selection-heading" className="panel">
           <h2 id="live-selection-heading" ref={reviewHeadingRef} tabIndex={-1}>
             Your dataset collection ({liveSelected.length})
           </h2>

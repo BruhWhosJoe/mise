@@ -41,7 +41,7 @@ function RecipeDiagram({ recipe }: { recipe: RecipeResponse }) {
   return (
     <section
       aria-labelledby={showDiagram ? titleId : listId}
-      className="recipe-diagram"
+      className="panel recipe-diagram"
     >
       {showDiagram && (
         <>

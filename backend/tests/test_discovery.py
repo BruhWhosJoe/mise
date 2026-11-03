@@ -1,6 +1,7 @@
 """Discovery tests: pure validation plus mocked orchestration."""
 
 import asyncio
+import json
 
 import pytest
 
@@ -11,7 +12,12 @@ from app.discovery import (
     validate_question,
     validate_recommendations,
 )
-from app.model_client import ModelClient, ModelOutputError, ModelUpstreamError
+from app.model_client import (
+    ModelClient,
+    ModelOutputError,
+    ModelTimeoutError,
+    ModelUpstreamError,
+)
 from app.models import CatalogRecord
 
 
@@ -465,3 +471,114 @@ def test_run_discovery_expansion_terms_add_recall(monkeypatch):
     assert [rec.record.assigned_id for rec in response.recommendations] == ['1']
     assert response.coverage.expanded_terms == ['inundation']
     assert response.coverage.expansion_fallback is False
+
+
+def _many_term_records(count):
+    # Each record matches one distinct question term, so every record ranks
+    # (no term is ubiquitous) and the first record matches two terms to win
+    # the top rank deterministically.
+    terms = [f'topic{i:02d}' for i in range(count)]
+    records = [
+        _record(str(i + 1), title=f'Dataset survey {term}')
+        for i, term in enumerate(terms)
+    ]
+    records[0] = _record('1', title=f'Dataset survey {terms[0]} {terms[1]}')
+    return terms, records
+
+
+def test_run_discovery_timeout_retries_once_with_top_40(monkeypatch):
+    # A timeout on the full shortlist retries automatically with the top 40
+    # candidates; coverage discloses the reduced shortlist.
+    monkeypatch.setenv('MF_MODEL_API_KEY', 'test-key')
+    terms, records = _many_term_records(45)
+    prompt_sizes = []
+
+    async def fake_snapshot(**kwargs):
+        return _snapshot(records, total=len(records))
+
+    async def fake_complete(self, **kwargs):
+        if kwargs.get('schema_name') == 'expansion':
+            return {'keywords': [], 'place': []}
+        prompt_sizes.append(len(json.loads(kwargs['user'])['candidates']))
+        if len(prompt_sizes) == 1:
+            raise ModelTimeoutError('timed out')
+        return {
+            'interpretation': {'goal': 'g', 'assumptions': []},
+            'recommendations': [
+                {
+                    'assigned_id': '1',
+                    'relevance': 'direct',
+                    'relevance_score': 90,
+                    'why': 'Topical survey.',
+                    'limitations': [],
+                }
+            ],
+            'gaps': [],
+        }
+
+    monkeypatch.setattr(
+        catalog_cache, 'get_catalog_snapshot', fake_snapshot
+    )
+    monkeypatch.setattr(ModelClient, 'complete_json', fake_complete)
+    response = _run(discovery.run_discovery(' '.join(terms)))
+    assert prompt_sizes == [45, 40]
+    assert response.coverage.candidates_evaluated == 40
+    assert [rec.record.assigned_id for rec in response.recommendations] == ['1']
+    assert any(
+        'retried once with the top 40' in note
+        for note in response.coverage.retrieval_notes
+    )
+
+
+def test_run_discovery_timeout_without_reduction_reraises(monkeypatch):
+    # A shortlist already at 40 or fewer has nothing to shed: the timeout
+    # propagates so the route can report it.
+    monkeypatch.setenv('MF_MODEL_API_KEY', 'test-key')
+    calls = []
+
+    async def fake_snapshot(**kwargs):
+        return _snapshot(
+            [
+                _record('1', title='Flood risk zones'),
+                _record('2', title='Bird counts'),
+            ],
+            total=2,
+        )
+
+    async def fake_complete(self, **kwargs):
+        if kwargs.get('schema_name') == 'expansion':
+            return {'keywords': [], 'place': []}
+        calls.append(kwargs)
+        raise ModelTimeoutError('timed out')
+
+    monkeypatch.setattr(
+        catalog_cache, 'get_catalog_snapshot', fake_snapshot
+    )
+    monkeypatch.setattr(ModelClient, 'complete_json', fake_complete)
+    with pytest.raises(ModelTimeoutError):
+        _run(discovery.run_discovery('flood risk'))
+    assert len(calls) == 1
+
+
+def test_run_discovery_timeout_on_retry_fails(monkeypatch):
+    # The fallback is a single retry: a second timeout is the final answer.
+    monkeypatch.setenv('MF_MODEL_API_KEY', 'test-key')
+    terms, records = _many_term_records(45)
+    calls = []
+
+    async def fake_snapshot(**kwargs):
+        return _snapshot(records, total=len(records))
+
+    async def fake_complete(self, **kwargs):
+        if kwargs.get('schema_name') == 'expansion':
+            return {'keywords': [], 'place': []}
+        calls.append(kwargs)
+        raise ModelTimeoutError('timed out')
+
+    monkeypatch.setattr(
+        catalog_cache, 'get_catalog_snapshot', fake_snapshot
+    )
+    monkeypatch.setattr(ModelClient, 'complete_json', fake_complete)
+    with pytest.raises(ModelTimeoutError):
+        _run(discovery.run_discovery(' '.join(terms)))
+    assert len(calls) == 2

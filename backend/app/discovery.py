@@ -13,7 +13,8 @@ Pipeline (documented retrieval/ranking approach):
    Lexical matching is a recall aid, not an exhaustive semantic evaluation
    of every record.
 4. Ask the Meta model to interpret the goal and evaluate only those
-   candidates (bounded context, one request plus at most one repair).
+   candidates (bounded context, one request plus at most one repair; a
+   timeout retries once on the top 40 candidates before failing).
 5. Validate every model-returned ID against the candidates, enrich matches
    from authoritative MCP records, and report coverage honestly.
 """
@@ -31,6 +32,7 @@ from .model_client import (
     ModelClient,
     ModelError,
     ModelOutputError,
+    ModelTimeoutError,
     check_configured,
     model_settings_from_env,
 )
@@ -44,6 +46,9 @@ from .models import (
 
 MAX_QUESTION_CHARS = 2000
 CANDIDATE_OVERVIEW_CHARS = 400
+# Timeout fallback: when the first evaluation call times out, retry once with
+# the top-ranked slice of the shortlist instead of failing outright.
+TIMEOUT_RETRY_CANDIDATES = 40
 
 DISCOVERY_SYSTEM = """You evaluate catalog datasets against a research question.
 Return JSON only, matching this shape:
@@ -124,6 +129,18 @@ class _DiscoveryModelOutput(BaseModel):
     interpretation: _ModelInterpretation
     recommendations: list[_ModelRecommendation] = []
     gaps: list[str] = []
+
+
+def evaluation_payload(
+    question: str, max_recommendations: int, candidates: list[CatalogRecord]
+) -> dict[str, Any]:
+    """Build the evaluator prompt payload for one candidate slice (pure)."""
+    return {
+        'question': question,
+        'max_recommendations': max_recommendations,
+        'candidates_evaluated': len(candidates),
+        'candidates': [serialize_candidate(record) for record in candidates],
+    }
 
 
 def validate_question(question: Any) -> str:
@@ -253,25 +270,39 @@ async def run_discovery(question: str) -> DiscoveryResponse:
         expansion_terms=expanded.keywords if expanded else (),
         place_terms=expanded.place if expanded else (),
     )
-    user_payload = {
-        'question': cleaned,
-        'max_recommendations': settings.discovery_max_results,
-        'candidates_evaluated': len(retrieval_result.candidates),
-        'candidates': [
-            serialize_candidate(record)
-            for record in retrieval_result.candidates
-        ],
-    }
-    raw = await client.complete_json(
-        system=DISCOVERY_SYSTEM,
-        user=json.dumps(user_payload, default=str),
-        schema_name='discovery',
-        schema=_DiscoveryModelOutput.model_json_schema(),
+    evaluated = retrieval_result.candidates
+    shortlist_reduced = False
+    user_payload = evaluation_payload(
+        cleaned, settings.discovery_max_results, evaluated
     )
+    try:
+        raw = await client.complete_json(
+            system=DISCOVERY_SYSTEM,
+            user=json.dumps(user_payload, default=str),
+            schema_name='discovery',
+            schema=_DiscoveryModelOutput.model_json_schema(),
+        )
+    except ModelTimeoutError:
+        # One automatic retry on a smaller prompt: the candidates stay in
+        # rank order, so the first slice is the most promising subset. A
+        # timeout on the retry (or a shortlist already this small) fails.
+        if len(evaluated) <= TIMEOUT_RETRY_CANDIDATES:
+            raise
+        evaluated = evaluated[:TIMEOUT_RETRY_CANDIDATES]
+        shortlist_reduced = True
+        user_payload = evaluation_payload(
+            cleaned, settings.discovery_max_results, evaluated
+        )
+        raw = await client.complete_json(
+            system=DISCOVERY_SYSTEM,
+            user=json.dumps(user_payload, default=str),
+            schema_name='discovery',
+            schema=_DiscoveryModelOutput.model_json_schema(),
+        )
     try:
         parsed = parse_model_output(raw)
         matches, dropped, dupes, capped = validate_recommendations(
-            retrieval_result.candidates,
+            evaluated,
             parsed.recommendations,
             settings.discovery_max_results,
         )
@@ -288,7 +319,7 @@ async def run_discovery(question: str) -> DiscoveryResponse:
         )
         parsed = parse_model_output(repaired)
         matches, dropped, dupes, capped = validate_recommendations(
-            retrieval_result.candidates,
+            evaluated,
             parsed.recommendations,
             settings.discovery_max_results,
         )
@@ -315,6 +346,13 @@ async def run_discovery(question: str) -> DiscoveryResponse:
             'query expanded with '
             f'{len(expanded.keywords)} topical term(s)'
         )
+    if shortlist_reduced:
+        retrieval_notes.append(
+            'evaluation timed out on the full '
+            f'{len(retrieval_result.candidates)}-candidate shortlist; '
+            'retried once with the top '
+            f'{TIMEOUT_RETRY_CANDIDATES} candidates'
+        )
     return DiscoveryResponse(
         question=cleaned,
         interpretation=Interpretation(
@@ -339,7 +377,7 @@ async def run_discovery(question: str) -> DiscoveryResponse:
             records_retrieved=len(snapshot.records),
             retrieval_complete=snapshot.complete,
             retrieval_notes=retrieval_notes,
-            candidates_evaluated=len(retrieval_result.candidates),
+            candidates_evaluated=len(evaluated),
             candidates_excluded_no_id=retrieval_result.excluded_no_id,
             model_dropped_unknown_ids=dropped,
             model_duplicates_removed=dupes,
@@ -353,7 +391,7 @@ async def run_discovery(question: str) -> DiscoveryResponse:
                 record.title
                 if record.title
                 else f'Untitled record ({record.assigned_id})'
-                for record in retrieval_result.candidates[:10]
+                for record in evaluated[:10]
             ],
         ),
         partial=partial,

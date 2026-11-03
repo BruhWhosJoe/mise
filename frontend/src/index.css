@@ -30,6 +30,9 @@
   --nav-active: #2c3f68;
   --focus-on-dark: #bcd0fb;
 
+  /* One card shadow for every raised surface, both themes. */
+  --shadow-card: 0 1px 2px rgb(20 31 58 / 0.06);
+
   --sans:
     'Manrope', system-ui, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial,
     sans-serif;
@@ -95,22 +98,25 @@ h2,
 h3,
 h4 {
   line-height: 1.22;
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.5rem;
   font-weight: 700;
   letter-spacing: -0.015em;
 }
 
+/* Type scale, same on every page: page title 1.75, section 1.25, card
+   title 1.35 (set on the card classes), body 1, meta 0.85. */
+
 h1 {
-  font-size: 2rem;
+  font-size: 1.75rem;
 }
 
 h2 {
-  font-size: 1.4rem;
-  margin-top: 2.25rem;
+  font-size: 1.25rem;
+  margin-top: 2rem;
 }
 
 h3 {
-  font-size: 1.08rem;
+  font-size: 1.1rem;
   margin-top: 1.5rem;
 }
 
@@ -125,7 +131,7 @@ p {
 ul,
 ol {
   margin: 0 0 1rem;
-  padding-left: 1.25rem;
+  padding-left: 1.5rem;
 }
 
 button,
@@ -147,9 +153,9 @@ a {
 
 button {
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0.6rem 1.1rem;
+  padding: 0.5rem 1rem;
   font-weight: 600;
   background: var(--action);
   color: var(--text-on-action);
@@ -186,14 +192,14 @@ button.secondary:disabled:hover {
 }
 
 button.small {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
 }
 
 label {
   font-weight: 600;
   display: block;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 textarea,
@@ -202,8 +208,8 @@ input[type='text'] {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--input-border);
-  border-radius: 6px;
-  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+  padding: 0.75rem;
 }
 
 textarea::placeholder {
@@ -215,8 +221,8 @@ select {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--input-border);
-  border-radius: 6px;
-  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
 }
 
 select:disabled {

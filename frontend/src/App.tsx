@@ -124,7 +124,7 @@ function Shell() {
             >
               <p>
                 Start a new investigation? This clears the question, results,
-                selection, and recipe.
+                selection, recipe, and conversation.
               </p>
               <div className="nav-confirm-actions">
                 <button
@@ -159,6 +159,7 @@ function Shell() {
       </nav>
 
       <main className="workspace">
+        <div className="page-container">
         <div className="workspace-top">
           <div className="workspace-controls">
             <ThemeControl theme={theme} onChange={setTheme} />
@@ -210,6 +211,7 @@ function Shell() {
         {view === 'discover' && <AIDiscovery />}
         {view === 'catalog' && <LiveCatalog />}
         {view === 'recipe' && <RecipeView />}
+        </div>
       </main>
 
       {assistantOpen && (

@@ -22,7 +22,7 @@ import {
 } from '../utils/datasetLinks'
 import { downloadTextFile } from '../utils/download'
 import CopyLinkButton from './CopyLinkButton'
-import { DatasetDetailSections, ExternalLink } from './DatasetDetails'
+import { DatasetDetailSections, OpenSourceButton } from './DatasetDetails'
 import RecipeDiagram from './RecipeDiagram'
 
 function buildRecipeMarkdown(recipe: RecipeResponse): string {
@@ -109,10 +109,10 @@ function DatasetChip({
 }
 
 /**
- * One dataset in a generated recipe: the same Open / Copy / View-details
- * actions as elsewhere. Full metadata loads only when the reader opens
- * details (cached per dataset). No remove control here — the recipe is
- * generated output; membership changes happen in the dataset collection.
+ * One dataset in a generated recipe: View details, Open, and Copy like the
+ * cards. Full metadata loads only when the reader opens details (cached
+ * per dataset). No remove control here — the recipe is generated output;
+ * membership changes happen in the dataset collection.
  */
 function RecipeDatasetItem({ dataset }: { dataset: RecipeDatasetRef }) {
   const [open, setOpen] = useState(false)
@@ -146,7 +146,7 @@ function RecipeDatasetItem({ dataset }: { dataset: RecipeDatasetRef }) {
 
   return (
     <li className="recipe-item">
-      <div>
+      <div className="collection-main">
         <h4>{title}</h4>
         <p className="dataset-meta">
           {dataset.organization_name ??
@@ -155,11 +155,18 @@ function RecipeDatasetItem({ dataset }: { dataset: RecipeDatasetRef }) {
           <span aria-hidden="true"> · </span>
           <span>ID: {dataset.assigned_id}</span>
         </p>
-        <div className="dataset-links">
+        <div className="dataset-actions">
+          <button
+            type="button"
+            className="secondary small"
+            aria-expanded={open}
+            aria-controls={detailId}
+            onClick={handleToggleOpen}
+          >
+            {open ? 'Hide details' : 'View details'}
+          </button>
           {links.sourcePage ? (
-            <ExternalLink href={links.sourcePage}>
-              Open source page
-            </ExternalLink>
+            <OpenSourceButton href={links.sourcePage} />
           ) : (
             <span className="not-provided">Source link not provided</span>
           )}
@@ -189,17 +196,6 @@ function RecipeDatasetItem({ dataset }: { dataset: RecipeDatasetRef }) {
           </div>
         )}
       </div>
-      <div className="item-actions">
-        <button
-          type="button"
-          className="secondary small"
-          aria-expanded={open}
-          aria-controls={detailId}
-          onClick={handleToggleOpen}
-        >
-          {open ? 'Hide details' : 'View details'}
-        </button>
-      </div>
     </li>
   )
 }
@@ -211,6 +207,21 @@ function LiveRecipe() {
   const liveSelected = state.liveSelected
   const stale = isRecipeStale(state)
   const inputsValid = recipeInputsValid(state)
+  // A stale recipe never shows a dead Regenerate button: the hint names the
+  // exact missing input instead.
+  const staleHint = (() => {
+    const count = selectedIds(state).length
+    if (count === 0) {
+      return 'Select datasets first, then regenerate this recipe.'
+    }
+    if (count > RECIPE_MAX_DATASETS) {
+      return `Deselect down to ${RECIPE_MAX_DATASETS} datasets, then regenerate this recipe.`
+    }
+    if (state.aiSearch.status === 'loading') {
+      return 'Wait for the search to finish, then regenerate this recipe.'
+    }
+    return 'Run an AI Discovery search first, then regenerate this recipe.'
+  })()
   const [tick, setTick] = useState(0)
   const data = recipe.data
   const completedSeconds =
@@ -236,8 +247,9 @@ function LiveRecipe() {
   }
 
   return (
-    <section aria-labelledby="live-recipe-heading">
-      <h2 id="live-recipe-heading">Your data recipe</h2>
+    <>
+      <section aria-labelledby="live-recipe-heading" className="panel">
+        <h2 id="live-recipe-heading">Your data recipe</h2>
       {liveQuestion ? (
         <p className="submitted-question">
           Question: <q>{liveQuestion}</q>
@@ -303,165 +315,17 @@ function LiveRecipe() {
             Your question or selection changed since this recipe was
             generated, so it may be out of date.
           </p>
-          <button
-            type="button"
-            className="secondary small"
-            disabled={!inputsValid || recipe.status === 'loading'}
-            onClick={handleGenerate}
-          >
-            Regenerate
-          </button>
-        </div>
-      )}
-
-      {data && (
-        <div aria-live="polite" className="recipe-content">
-          <h3>Objective</h3>
-          <p>{data.objective}</p>
-
-          <h3>Datasets ({data.datasets.length})</h3>
-          <ul className="recipe-list">
-            {data.datasets.map((dataset) => (
-              <RecipeDatasetItem
-                key={dataset.assigned_id}
-                dataset={dataset}
-              />
-            ))}
-          </ul>
-
-          <h3>Contributions</h3>
-          <ul>
-            {data.contributions.map((item) => (
-              <li key={item.assigned_id}>
-                <DatasetChip datasetId={item.assigned_id} refs={refById} />
-                {': '}
-                {item.contribution}
-              </li>
-            ))}
-          </ul>
-
-          <h3>Analysis workflow</h3>
-          {data.workflow.length === 0 ? (
-            <p className="empty-section">
-              No workflow steps were provided.
-            </p>
-          ) : (
-            <ol>
-              {data.workflow.map((step) => (
-                <li key={step.step}>
-                  <strong>{step.title}</strong>
-                  <p>{step.detail}</p>
-                  {step.dataset_ids.length > 0 && (
-                    <p>
-                      {step.dataset_ids.map((id) => (
-                        <DatasetChip key={id} datasetId={id} refs={refById} />
-                      ))}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ol>
-          )}
-
-          <h3>Ways to combine</h3>
-          {data.combinations.length === 0 ? (
-            <p className="empty-section">
-              No dataset combinations were proposed.
-            </p>
-          ) : (
-            <ul>
-              {data.combinations.map((combo, index) => (
-                <li key={`${combo.approach}-${index}`}>
-                  <p>
-                    {combo.dataset_ids.map((id) => (
-                      <DatasetChip
-                        key={id}
-                        datasetId={id}
-                        refs={refById}
-                      />
-                    ))}
-                  </p>
-                  <p>Approach: {combo.approach}</p>
-                  <p>Prerequisites: {combo.prerequisites}</p>
-                  <p>Uncertainty: {combo.uncertainty}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <RecipeDiagram recipe={data} />
-
-          <h3>Data gaps</h3>
-          {data.gaps.length === 0 ? (
-            <p className="empty-section">
-              No data gaps were noted in this recipe.
-            </p>
-          ) : (
-            <ul>
-              {data.gaps.map((gap) => (
-                <li key={gap}>{gap}</li>
-              ))}
-            </ul>
-          )}
-
-          <h3>Limitations and checks</h3>
-          {data.limitations.length === 0 ? (
-            <p className="empty-section">
-              No limitations were listed. This does not mean none exist —
-              verify methods, coverage, and licensing before analysis.
-            </p>
-          ) : (
-            <ul>
-              {data.limitations.map((limitation) => (
-                <li key={limitation}>{limitation}</li>
-              ))}
-            </ul>
-          )}
-
-          <h3>Proposed outputs</h3>
-          {data.outputs.length === 0 ? (
-            <p className="empty-section">
-              No proposed outputs were listed.
-            </p>
-          ) : (
-            <ul>
-              {data.outputs.map((output) => (
-                <li key={output}>{output}</li>
-              ))}
-            </ul>
-          )}
-
-          <p className="sample-note">
-            Generated {new Date(data.generated_at).toLocaleString()}.
-          </p>
-          <div className="review-actions">
+          {recipe.status === 'loading' ? null : inputsValid ? (
             <button
               type="button"
               className="secondary small"
-              onClick={() =>
-                downloadTextFile(
-                  'mise-data-recipe.md',
-                  buildRecipeMarkdown(data),
-                  'text/markdown',
-                )
-              }
+              onClick={handleGenerate}
             >
-              Download Markdown
+              Regenerate
             </button>
-            <button
-              type="button"
-              className="secondary small"
-              onClick={() =>
-                downloadTextFile(
-                  'mise-data-recipe.json',
-                  JSON.stringify(data, null, 2),
-                  'application/json',
-                )
-              }
-            >
-              Download JSON
-            </button>
-          </div>
+          ) : (
+            <p className="sample-note">{staleHint}</p>
+          )}
         </div>
       )}
 
@@ -481,7 +345,211 @@ function LiveRecipe() {
           </button>
         </div>
       )}
-    </section>
+      </section>
+
+      {data && (
+        <div aria-live="polite" className="recipe-columns">
+          <section
+            aria-labelledby="recipe-datasets-heading"
+            className="panel recipe-datasets"
+          >
+            <h3 id="recipe-datasets-heading">
+              Datasets in this recipe ({data.datasets.length})
+            </h3>
+            <ul className="recipe-list">
+              {data.datasets.map((dataset) => (
+                <RecipeDatasetItem
+                  key={dataset.assigned_id}
+                  dataset={dataset}
+                />
+              ))}
+            </ul>
+          </section>
+
+          <div className="recipe-main">
+            <section
+              aria-labelledby="recipe-objective-heading"
+              className="panel"
+            >
+              <h3 id="recipe-objective-heading">Objective</h3>
+              <p>{data.objective}</p>
+            </section>
+
+            <section
+              aria-labelledby="recipe-contributions-heading"
+              className="panel"
+            >
+              <h3 id="recipe-contributions-heading">Contributions</h3>
+              <ul>
+                {data.contributions.map((item) => (
+                  <li key={item.assigned_id}>
+                    <DatasetChip datasetId={item.assigned_id} refs={refById} />
+                    {': '}
+                    {item.contribution}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section
+              aria-labelledby="recipe-workflow-heading"
+              className="panel"
+            >
+              <h3 id="recipe-workflow-heading">Analysis workflow</h3>
+              {data.workflow.length === 0 ? (
+                <p className="empty-section">
+                  No workflow steps were provided.
+                </p>
+              ) : (
+                <ol>
+                  {data.workflow.map((step) => (
+                    <li key={step.step}>
+                      <strong>{step.title}</strong>
+                      <p>{step.detail}</p>
+                      {step.dataset_ids.length > 0 && (
+                        <p>
+                          {step.dataset_ids.map((id) => (
+                            <DatasetChip
+                              key={id}
+                              datasetId={id}
+                              refs={refById}
+                            />
+                          ))}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+
+            <section
+              aria-labelledby="recipe-combinations-heading"
+              className="panel"
+            >
+              <h3 id="recipe-combinations-heading">Ways to combine</h3>
+              {data.combinations.length === 0 ? (
+                <p className="empty-section">
+                  No dataset combinations were proposed.
+                </p>
+              ) : (
+                <ul>
+                  {data.combinations.map((combo, index) => (
+                    <li key={`${combo.approach}-${index}`}>
+                      <p>
+                        {combo.dataset_ids.map((id) => (
+                          <DatasetChip
+                            key={id}
+                            datasetId={id}
+                            refs={refById}
+                          />
+                        ))}
+                      </p>
+                      <p>Approach: {combo.approach}</p>
+                      <p>Prerequisites: {combo.prerequisites}</p>
+                      <p>Uncertainty: {combo.uncertainty}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <RecipeDiagram recipe={data} />
+
+            <section aria-labelledby="recipe-gaps-heading" className="panel">
+              <h3 id="recipe-gaps-heading">Data gaps</h3>
+              {data.gaps.length === 0 ? (
+                <p className="empty-section">
+                  No data gaps were noted in this recipe.
+                </p>
+              ) : (
+                <ul>
+                  {data.gaps.map((gap) => (
+                    <li key={gap}>{gap}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section
+              aria-labelledby="recipe-limitations-heading"
+              className="panel"
+            >
+              <h3 id="recipe-limitations-heading">Limitations and checks</h3>
+              {data.limitations.length === 0 ? (
+                <p className="empty-section">
+                  No limitations were listed. This does not mean none exist —
+                  verify methods, coverage, and licensing before analysis.
+                </p>
+              ) : (
+                <ul>
+                  {data.limitations.map((limitation) => (
+                    <li key={limitation}>{limitation}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section
+              aria-labelledby="recipe-outputs-heading"
+              className="panel"
+            >
+              <h3 id="recipe-outputs-heading">Proposed outputs</h3>
+              {data.outputs.length === 0 ? (
+                <p className="empty-section">
+                  No proposed outputs were listed.
+                </p>
+              ) : (
+                <ul>
+                  {data.outputs.map((output) => (
+                    <li key={output}>{output}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section
+              aria-labelledby="recipe-downloads-heading"
+              className="panel"
+            >
+              <h3 id="recipe-downloads-heading">Downloads</h3>
+              <p className="sample-note">
+                Generated {new Date(data.generated_at).toLocaleString()}.
+              </p>
+              <div className="review-actions">
+                <button
+                  type="button"
+                  className="secondary small"
+                  onClick={() =>
+                    downloadTextFile(
+                      'mise-data-recipe.md',
+                      buildRecipeMarkdown(data),
+                      'text/markdown',
+                    )
+                  }
+                >
+                  Download Markdown
+                </button>
+                <button
+                  type="button"
+                  className="secondary small"
+                  onClick={() =>
+                    downloadTextFile(
+                      'mise-data-recipe.json',
+                      JSON.stringify(data, null, 2),
+                      'application/json',
+                    )
+                  }
+                >
+                  Download JSON
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      )}
+
+    </>
   )
 }
 

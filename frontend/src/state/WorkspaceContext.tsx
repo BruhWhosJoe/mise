@@ -580,6 +580,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'chat-clear-error' })
   }, [])
 
+  const clearChat = useCallback(() => {
+    dispatch({ type: 'clear-chat' })
+  }, [])
+
+  const undoClearChat = useCallback(() => {
+    dispatch({ type: 'undo-clear-chat' })
+  }, [])
+
   const newInvestigation = useCallback(() => {
     // Old responses must never repopulate the fresh investigation: abort the
     // question-scoped requests and rotate the id the guards are keyed on.
@@ -629,6 +637,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       undoChatApplied,
       dismissChatSuggestion,
       clearChatError,
+      clearChat,
+      undoClearChat,
       newInvestigation,
       dismissStorageNotice,
     }),
@@ -662,6 +672,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       undoChatApplied,
       dismissChatSuggestion,
       clearChatError,
+      clearChat,
+      undoClearChat,
       newInvestigation,
       dismissStorageNotice,
     ],

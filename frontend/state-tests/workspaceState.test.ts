@@ -274,13 +274,16 @@ describe('navigation preserves the investigation', () => {
       endedAt: 8000,
     })
     assert.equal(state.aiSearch.durationMs, 5000)
-    // A later failed refresh still shows the previous completed duration.
+    // A later failed refresh shows only the error: the new search cleared
+    // the old rows at start. The completed duration stays stored (and
+    // returns with the next success) but renders nothing without results.
     state = workspaceReducer(state, {
       type: 'search-start',
       question: 'q',
       requestId: 3,
       startedAt: 9000,
     })
+    assert.equal(state.aiSearch.result, null)
     state = workspaceReducer(state, {
       type: 'search-error',
       investigationId: 'inv-1',
@@ -289,7 +292,8 @@ describe('navigation preserves the investigation', () => {
       endedAt: 9500,
       interrupted: false,
     })
-    assert.equal(state.aiSearch.result?.question, 'q')
+    assert.equal(state.aiSearch.result, null)
+    assert.equal(state.aiSearch.error, 'boom')
     assert.equal(state.aiSearch.durationMs, 5000)
   })
 
@@ -339,7 +343,7 @@ describe('navigation preserves the investigation', () => {
 })
 
 describe('search cancellation', () => {
-  it('records cancellation and preserves results, duration, and selection', () => {
+  it('records cancellation and preserves duration and selection', () => {
     let state = investigatedState()
     state = workspaceReducer(state, {
       type: 'search-start',
@@ -356,7 +360,9 @@ describe('search cancellation', () => {
     assert.equal(state.aiSearch.status, 'canceled')
     assert.equal(state.aiSearch.error, 'Search canceled')
     assert.equal(state.aiSearch.requestId, 3)
-    assert.equal(state.aiSearch.result?.question, 'flood risk?')
+    // Results were cleared when the new search started: cancel preserves
+    // the selection and duration, it cannot resurrect old rows.
+    assert.equal(state.aiSearch.result, null)
     assert.equal(state.aiSearch.durationMs, 3500)
     assert.deepEqual(selectedIds(state), ['a-1'])
   })
@@ -384,7 +390,7 @@ describe('search cancellation', () => {
       endedAt: 12_000,
     })
     assert.equal(state.aiSearch.status, 'canceled')
-    assert.equal(state.aiSearch.result?.question, 'flood risk?')
+    assert.equal(state.aiSearch.result, null)
     // A new search starts clean; the canceled flight still cannot land.
     state = workspaceReducer(state, {
       type: 'search-start',
@@ -610,7 +616,11 @@ describe('versioned persistence', () => {
     assert.equal(loaded.value.aiSearch.status, 'error')
     assert.equal(loaded.value.aiSearch.interrupted, true)
     assert.equal(loaded.value.aiSearch.error, SEARCH_INTERRUPTED_MESSAGE)
-    assert.equal(loaded.value.aiSearch.result?.question, 'flood risk?')
+    // The in-flight search had already cleared the old rows at start, so
+    // the reload restores the retry state (question + interrupted flag)
+    // with no stale results attached.
+    assert.equal(loaded.value.aiSearch.result, null)
+    assert.equal(loaded.value.aiSearch.question, 'second try')
     assert.equal(loaded.value.recipe.status, 'error')
     assert.equal(loaded.value.recipe.interrupted, true)
     assert.equal(loaded.value.recipe.error, RECIPE_INTERRUPTED_MESSAGE)
@@ -932,15 +942,22 @@ describe('discovery filter prefs in the store', () => {
     assert.deepEqual(selectedIds(state), ['a-1'])
   })
 
-  it('new searches keep the threshold; nothing changes it silently', () => {
+  it('new searches reset the relevance filters to Show all', () => {
     let state = investigatedState()
     state = workspaceReducer(state, { type: 'set-min-score', minScore: 70 })
+    state = workspaceReducer(state, {
+      type: 'set-discovery-show-all',
+      showAll: false,
+    })
+    state = workspaceReducer(state, { type: 'set-discovery-tag', tag: 't' })
     state = workspaceReducer(state, {
       type: 'search-start',
       question: 'second?',
       requestId: 2,
       startedAt: 10_000,
     })
+    // The old threshold, preset, and text filters leave with the old rows.
+    assert.deepEqual(state.discoveryUI, defaultDiscoveryUI())
     state = workspaceReducer(state, {
       type: 'search-success',
       investigationId: 'inv-1',
@@ -948,8 +965,23 @@ describe('discovery filter prefs in the store', () => {
       result: makeDiscovery('second?', makeRecord('a-2', 'record two')),
       endedAt: 11_000,
     })
-    assert.equal(state.discoveryUI.minScore, 70)
+    assert.deepEqual(state.discoveryUI, defaultDiscoveryUI())
     assert.equal(state.aiSearch.result?.question, 'second?')
+  })
+
+  it('new searches clear old rows and the old question, not the collection', () => {
+    let state = investigatedState()
+    state = workspaceReducer(state, {
+      type: 'search-start',
+      question: 'second?',
+      requestId: 2,
+      startedAt: 10_000,
+    })
+    assert.equal(state.aiSearch.status, 'loading')
+    assert.equal(state.aiSearch.result, null)
+    assert.equal(state.liveQuestion, null)
+    assert.equal(state.submittedQuestion, 'second?')
+    assert.deepEqual(selectedIds(state), ['a-1'])
   })
 
   it('persists filter prefs across a save/load round-trip', () => {
@@ -1320,6 +1352,84 @@ describe('assistant chat turns', () => {
     )
     state = workspaceReducer(state, { type: 'chat-dismiss-suggestion' })
     assert.equal(state.assistant.suggestedQuestion, null)
+  })
+
+  it('clear chat stashes the conversation for one undo', () => {
+    let state = startChat(chattedState(), 1)
+    state = succeedChat(state, {
+      requestId: 1,
+      actions: [chatAction({ op: 'explain', assigned_ids: ['d'] })],
+    })
+    assert.equal(state.assistant.messages.length, 2)
+    state = workspaceReducer(state, { type: 'clear-chat' })
+    assert.equal(state.assistant.messages.length, 0)
+    assert.notEqual(state.assistant.clearedChat, null)
+    // Results, selection, and filters are untouched by a chat clear.
+    assert.notEqual(state.aiSearch.result, null)
+    assert.deepEqual(state.discoveryUI, defaultDiscoveryUI())
+    state = workspaceReducer(state, { type: 'undo-clear-chat' })
+    assert.equal(state.assistant.messages.length, 2)
+    assert.equal(state.assistant.clearedChat, null)
+    // A second undo is a no-op: the stash is single-use.
+    const again = workspaceReducer(state, { type: 'undo-clear-chat' })
+    assert.equal(again, state)
+  })
+
+  it('clear chat is a no-op when empty or while sending', () => {
+    const empty = chattedState()
+    assert.equal(
+      workspaceReducer(empty, { type: 'clear-chat' }),
+      empty,
+    )
+    const sending = startChat(chattedState(), 1)
+    assert.equal(
+      workspaceReducer(sending, { type: 'clear-chat' }),
+      sending,
+    )
+  })
+
+  it('a fresh chat turn retires the cleared stash', () => {
+    let state = startChat(chattedState(), 1)
+    state = succeedChat(state, {
+      requestId: 1,
+      actions: [chatAction({ op: 'explain', assigned_ids: ['d'] })],
+    })
+    state = workspaceReducer(state, { type: 'clear-chat' })
+    assert.notEqual(state.assistant.clearedChat, null)
+    state = startChat(state, 2)
+    assert.equal(state.assistant.clearedChat, null)
+  })
+
+  it('a new investigation clears the chat and its undo stash', () => {
+    let state = startChat(chattedState(), 1)
+    state = succeedChat(state, {
+      requestId: 1,
+      actions: [chatAction({ op: 'explain', assigned_ids: ['d'] })],
+    })
+    state = workspaceReducer(state, { type: 'clear-chat' })
+    state = workspaceReducer(state, {
+      type: 'new-investigation',
+      investigationId: 'inv-2',
+    })
+    assert.equal(state.assistant.messages.length, 0)
+    assert.equal(state.assistant.clearedChat, null)
+    assert.equal(state.assistant.chatStatus, 'idle')
+  })
+
+  it('a new search retires the chat-applied undo snapshot', () => {
+    let state = startChat(chattedState(), 1)
+    state = succeedChat(state, {
+      requestId: 1,
+      actions: [chatAction({ op: 'select_top', count: 1 })],
+    })
+    assert.notEqual(state.chatApplied, null)
+    state = workspaceReducer(state, {
+      type: 'search-start',
+      question: 'another?',
+      requestId: 9,
+      startedAt: 20_000,
+    })
+    assert.equal(state.chatApplied, null)
   })
 })
 

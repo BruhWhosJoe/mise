@@ -23,7 +23,40 @@ Browser (React+TS+Vite, ./frontend)
 
 ## 2. Completed work and key files
 
-**Correction + UI polish pass (latest, uncommitted):**
+**Final quality pass (latest, uncommitted):**
+
+- Search reliability (`frontend/src/state/workspaceReducer.ts`
+  `search-start`, `frontend/src/components/AIDiscovery.tsx`): a new search
+  immediately clears old recommendations, the old interpretation, and the
+  old relevance filters, then shows "Searching N datasets…" (last known
+  real catalog total, else a generic line) with elapsed time and Cancel;
+  failures show only the error with Retry. Relevance resets to Show-all
+  on every new search.
+- Timeout fallback (`backend/app/discovery.py`, `backend/tests/
+  test_discovery.py`): if the evaluator call times out, one automatic
+  retry with the top 40 candidates runs before failing; coverage
+  discloses the reduced shortlist. Small shortlists and a second timeout
+  fail so the route can report them (3 new mocked tests).
+- Design tokens (`frontend/src/index.css`, `frontend/src/App.css`): type
+  scale 1.75/1.25/1.35/1/0.85rem; card radius 10px, button/chip radius
+  8px, one `--shadow-card`; spacing on the 4/8/12/16/24/32 scale; three
+  button styles (primary/secondary/quiet); ~1280px centered container;
+  bordered `.panel` sections; recipe two-column layout (sticky dataset
+  list left, content panels right, container-query stacking).
+- Card action bars (`LiveRecordCard.tsx`, `LiveCatalog.tsx`
+  `CollectionItem`, `LiveRecipe.tsx` `RecipeDatasetItem`,
+  `DatasetDetails.tsx` `OpenSourceButton`): all actions left-ordered
+  (Add primary / "Added ✓" secondary, View details, Open source page as
+  a secondary button with icon, Copy link); nothing floats right.
+- Assistant/state (`AssistantPanel.tsx`, `workspaceReducer.ts`,
+  `WorkspaceContext.tsx`, `App.tsx`, `LiveRecipe.tsx`): quiet "Clear
+  chat" with an Undo toast (single-use stash, retired by the next turn);
+  New investigation clears chat (confirm copy says so); stale recipes
+  show an enabled Regenerate when inputs are valid, else an exact hint
+  ("Select datasets first", deselect, or search first) — never a dead
+  button.
+
+**Correction + UI polish pass (earlier, uncommitted):**
 
 - Scores shown honestly (`frontend/src/utils/discoveryFilter.ts`,
   `frontend/src/state/workspaceReducer.ts`, `WorkspaceContext.tsx`,
@@ -92,7 +125,8 @@ actions, recipe diagram from real links only.
 - Show-all is the results default; moving the threshold or a chat refinement
   engages filtering; Clear/reset restores defaults. Filters narrow the
   returned set only and say so.
-- Cancellation is terminal (`canceled`), preserves results/duration/selection,
+- Cancellation is terminal (`canceled`), preserves duration/selection
+  (results were cleared at search start, so cancel cannot resurrect rows),
   rotates identity, never retries; UI distinguishes client-side cancel from
   guaranteed provider termination.
 - Detail/recipe fetch explicit `PREVIEW_FIELDS`: server field defaults are not
@@ -100,7 +134,11 @@ actions, recipe diagram from real links only.
 - Catalog search runs over the bounded cached snapshot with disclosed
   coverage; discovery text filters are client-side over the returned set.
 - Chat, discovery, recipe are distinct: chat never generates/overwrites recipes.
-- Filter state is user-only (never auto-changed); filtering never alters selection.
+- Filter state is user-only except that a new search resets relevance to
+  Show-all; filtering never alters selection.
+- New searches clear old rows/interpretation/filters at start (collection,
+  duration, and chat untouched) and retire the chat-applied undo snapshot;
+  chat clears are single-undo via a stash retired by the next turn.
 - Persistence stays v2: saves predating the text filters hydrate with empty
   strings rather than being dropped.
 - Rejected: new dependencies / test frameworks (node:test + pure pytest);
@@ -110,15 +148,16 @@ actions, recipe diagram from real links only.
 ## 4. Tested vs. unverified
 
 **Verified this session:** `npm run build` pass; `npm run lint` clean
-(0 errors, 0 warnings); `npm run test:state` 57/57 pass; backend 108 passed
-+ 54 failed where every failure is the sandbox `PermissionError` socket block
-(zero assertion failures — failure lines grouped and confirmed); sync
-OpenAPI check confirms `/api/catalog/search` is registered with `q`/`limit`
-params and the `CatalogSearchResponse` schema.
+(0 errors, 0 warnings); `npm run test:state` 64/64 pass; backend 125 passed
++ 66 failed where every failure is the sandbox `PermissionError` socket block
+(zero assertion failures — every `E` line grouped and confirmed). The 3 new
+timeout-fallback tests were additionally verified with a mocked
+synchronous coroutine driver (throwaway, outside the repo): 45 candidates
+rank, retry sends the top 40, coverage discloses it, small-shortlist and
+retry timeouts propagate.
 
-**Unverified — needs an out-of-sandbox run:** all 54 async backend tests
-(includes the 5 new async/route tests in `test_catalog_search.py`; its 3 pure
-tests pass in-sandbox).
+**Unverified — needs an out-of-sandbox run:** all 66 async backend tests
+(includes the 3 new timeout-fallback tests in `test_discovery.py`).
 
 **Unverified — no browser access in this environment:** all browser behavior
 below. Manual checklist:
@@ -129,16 +168,22 @@ below. Manual checklist:
 2. Source/copy links: Open source + Copy link on discovery cards, catalog
    cards, View-details (all three link rows), collection review, recipe
    datasets; missing links read as honestly unavailable.
-3. Cancel then search again: Cancel mid-search → "Search canceled" with prior
-   results kept → new search → late first response never appears.
+3. Cancel then search again: new search clears old rows + filters and shows
+   "Searching N datasets…" with elapsed time → Cancel mid-search →
+   "Search canceled", no resurrected rows → new search → late first
+   response never appears.
 4. Navigation/reload: switch views mid-search (loading persists, no refetch);
    reload mid-search (interrupted/retry); durations persist across nav+reload.
 5. Assistant: "select the top 3" → change summary + Undo → second refinement
-   composes; presets fill the discovery box without submitting or chatting.
+   composes; presets fill the discovery box without submitting or chatting;
+   Clear chat → "Conversation cleared." + Undo → Undo restores; New
+   investigation clears the chat too.
 6. Resizing: drag divider (purple hover), keyboard arrows/Home/End on the
    focused handle, Expand/Restore, reload → width persists; wide screen caps
    near 640px.
-7. Recipe: generate → diagram shows only real links → Markdown/JSON downloads.
+7. Recipe: generate → two columns on wide screens (sticky dataset list),
+   one column narrow → diagram shows only real links → stale notice offers
+   Regenerate or an exact hint → Markdown/JSON downloads.
 8. Light/dark toggle, 390px stacking (assistant stacks, handle hidden),
    keyboard-only pass, empty-question submit (red error + focus).
 
@@ -178,7 +223,9 @@ without it catalog browsing works but AI endpoints return 503),
 `MF_MODEL_BASE_URL`, `MF_MODEL_CHAT_PATH`, `MF_MODEL_NAME`,
 `MF_MODEL_TIMEOUT_SECONDS`, `MF_MODEL_MAX_OUTPUT_TOKENS`,
 `MF_MODEL_TEMPERATURE`, `MF_MODEL_MAX_RETRIES`, `MF_MODEL_STRUCTURED_MODE`,
-plus retrieval budgets (`MF_DISCOVERY_*`, `MF_RECIPE_*`, `MF_CATALOG_*`).
+plus retrieval budgets: `MF_DISCOVERY_CANDIDATES` (default 80),
+`MF_DISCOVERY_MAX_RESULTS` (default 15), `MF_EXPANSION_TIMEOUT_SECONDS`
+(default 30), `MF_RECIPE_*`, `MF_CATALOG_*` (see `backend/.env.example`).
 
 ## 7. Diagnosed causes (this pass)
 

@@ -55,7 +55,17 @@ function AIDiscovery() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const loading = search.status === 'loading'
   const result = search.result
-  const compact = result !== null
+  // Any activity (running, failed, canceled, or done) compacts the intro:
+  // old rows were cleared at start, so only the current state shows.
+  const compact =
+    result !== null ||
+    loading ||
+    search.status === 'error' ||
+    search.status === 'canceled'
+  // Last known catalog size for the loading line; null until any catalog
+  // page (or a previous search) has reported a real total.
+  const catalogTotal =
+    state.catalog.page?.total_records ?? result?.coverage.catalog_total ?? null
   const completedSeconds =
     search.durationMs === null
       ? null
@@ -73,15 +83,12 @@ function AIDiscovery() {
   )
   const topScore = highestScore(allRecommendations)
   const unscoredCount = countUnscored(allRecommendations)
-  // Old results stay labeled with their question until a new search succeeds:
-  // either a different search is in flight, or the draft moved on.
+  // Results can only go stale one way now: the draft moved on after the
+  // search succeeded (a new search clears old rows at start).
   const resultsStale =
     result !== null &&
-    ((search.question !== null &&
-      normalizeQuestion(search.question) !==
-        normalizeQuestion(result.question)) ||
-      (draft.trim() !== '' &&
-        normalizeQuestion(draft) !== normalizeQuestion(result.question)))
+    draft.trim() !== '' &&
+    normalizeQuestion(draft) !== normalizeQuestion(result.question)
 
   // Datalist suggestions come only from the returned set — never invented.
   const tagOptions = useMemo(() => {
@@ -262,8 +269,12 @@ function AIDiscovery() {
       </form>
 
       {loading && (
-        <>
-          <p aria-live="polite">Searching the catalog…</p>
+        <section aria-label="Search in progress" className="panel">
+          <p aria-live="polite" className="search-loading-title">
+            {catalogTotal !== null
+              ? `Searching ${catalogTotal.toLocaleString('en-US')} datasets…`
+              : 'Searching the catalog…'}
+          </p>
           <p className="sample-note" aria-hidden="true">
             {Math.floor(tick / 2)}s elapsed.
           </p>
@@ -272,7 +283,7 @@ function AIDiscovery() {
             stops this wait here; a request already sent to the model
             service may still finish.
           </p>
-        </>
+        </section>
       )}
       {search.status === 'ready' && result && completedSeconds !== null && (
         <p role="status">
@@ -386,34 +397,18 @@ function AIDiscovery() {
 
       {search.status === 'canceled' && (
         <div className="notice" role="status">
-          <p>
-            Search canceled.{' '}
-            {result
-              ? 'Your previous results and collection are unchanged below.'
-              : 'No results yet — run a search when ready.'}
-          </p>
+          <p>Search canceled. No results yet — run a search when ready.</p>
         </div>
       )}
 
       {result && (
-        <div aria-live="polite" aria-busy={loading}>
-          {search.status === 'error' && (
-            <div className="notice" role="status">
-              <p>
-                The latest search failed. Showing previous results for:{' '}
-                <q>{result.question}</q>
-              </p>
-            </div>
-          )}
-          {loading && (
-            <p className="sample-note">Updating results…</p>
-          )}
+        <div aria-live="polite">
           {resultsStale && (
             <div className="notice" role="status">
               <p>
-                These recommendations belong to your previous question:{' '}
-                <q>{result.question}</q> Run a new search to refresh
-                them.
+                These recommendations are for <q>{result.question}</q>;
+                the question box above has changed since. Run a new
+                search to refresh them.
               </p>
             </div>
           )}
@@ -446,7 +441,7 @@ function AIDiscovery() {
             </div>
           )}
 
-          <section aria-labelledby="ai-goal-heading">
+          <section aria-labelledby="ai-goal-heading" className="panel">
             <h2 id="ai-goal-heading">What we understood</h2>
             <p>{result.interpretation.goal}</p>
             {result.interpretation.assumptions.length > 0 && (
@@ -461,7 +456,7 @@ function AIDiscovery() {
             )}
           </section>
 
-          <section aria-labelledby="ai-results-heading">
+          <section aria-labelledby="ai-results-heading" className="panel">
             <h2 id="ai-results-heading">Recommended datasets</h2>
             {allRecommendations.length === 0 ? (
               <div className="notice">
@@ -762,7 +757,7 @@ function AIDiscovery() {
 
           <section
             aria-label="Search coverage details"
-            className="examples-disclosure"
+            className="panel examples-disclosure"
           >
             <button
               type="button"

@@ -17,7 +17,7 @@
 .side-nav {
   border-right: 1px solid var(--nav-active);
   background: var(--nav-bg);
-  padding: 1.25rem 1rem;
+  padding: 1.5rem 1rem;
   position: sticky;
   top: 0;
   height: 100svh;
@@ -33,7 +33,7 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .brand-mark-svg {
@@ -63,7 +63,7 @@
 .brand-tag {
   color: var(--nav-muted);
   font-size: 0.8rem;
-  margin: 0.35rem 0 1.25rem;
+  margin: 0.25rem 0 1.5rem;
 }
 
 .side-nav ul {
@@ -72,7 +72,7 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .side-nav li button {
@@ -89,13 +89,13 @@
   font-size: 1.02rem;
   font-weight: 500;
   text-align: left;
-  padding: 0.7rem 0.9rem;
+  padding: 0.75rem 1rem;
 }
 
 .nav-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .nav-icon {
@@ -120,7 +120,7 @@
   justify-content: center;
   min-width: 1.5rem;
   height: 1.5rem;
-  padding: 0 0.4rem;
+  padding: 0 0.5rem;
   border-radius: 999px;
   background: var(--action);
   color: var(--text-on-action);
@@ -184,9 +184,39 @@
 /* Central workspace */
 
 .workspace {
-  padding: 1.5rem 1.75rem 3rem;
+  padding: 1.5rem 0 2rem;
   width: 100%;
   min-width: 0;
+  container-type: inline-size;
+}
+
+/* Page content centers in a readable column on wide screens. */
+
+.page-container {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  width: 100%;
+}
+
+/* Bordered content panels with consistent gaps. */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem;
+  margin: 0 0 1.5rem;
+}
+
+.panel > h2:first-child,
+.panel > h3:first-child {
+  margin-top: 0;
+}
+
+.panel > :last-child {
+  margin-bottom: 0;
 }
 
 .workspace-top {
@@ -221,8 +251,8 @@
 
 .theme-options {
   display: inline-flex;
-  gap: 0.15rem;
-  padding: 0.2rem;
+  gap: 0.25rem;
+  padding: 0.25rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
@@ -244,9 +274,9 @@
 
 .theme-options label span {
   display: inline-block;
-  padding: 0.3rem 0.8rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 999px;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
 }
 
 .theme-options label:hover input:not(:checked) + span {
@@ -267,7 +297,7 @@
 .lede {
   color: var(--text-secondary);
   max-width: 42rem;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 /* Compact assisted-workspace summary: actual counts plus the next action. */
@@ -277,13 +307,13 @@
   border: 1px solid var(--border-soft);
   border-left: 4px solid var(--action);
   border-radius: 8px;
-  padding: 0.8rem 1rem;
-  margin-bottom: 1.25rem;
-  box-shadow: 0 1px 2px rgb(20 31 58 / 0.06);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-card);
 }
 
 .investigation-summary p {
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.25rem;
 }
 
 .investigation-summary p:last-child {
@@ -301,20 +331,20 @@
 
 .investigation-counts {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .investigation-next {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.35rem 0.6rem;
+  gap: 0.25rem 0.5rem;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .question-form {
-  margin: 1.25rem 0 0.5rem;
+  margin: 1.5rem 0 0.5rem;
 }
 
 .question-form textarea {
@@ -333,8 +363,8 @@
 /* Empty-question toast: visible under the question box, auto-dismisses. */
 
 .question-toast {
-  margin-top: 0.6rem;
-  padding: 0.55rem 0.8rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--danger);
   border-left: 4px solid var(--danger);
   border-radius: 8px;
@@ -363,7 +393,7 @@ button.secondary.button-danger:hover {
 .error {
   color: var(--danger);
   font-weight: 600;
-  margin: 0.4rem 0 0;
+  margin: 0.5rem 0 0;
 }
 
 /* Example questions */
@@ -384,9 +414,9 @@ button.secondary.button-danger:hover {
   border: 1px solid var(--border-soft);
   font-weight: 500;
   text-align: left;
-  padding: 0.9rem 1rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgb(20 31 58 / 0.05);
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
 }
 
 .example-card:hover {
@@ -395,12 +425,12 @@ button.secondary.button-danger:hover {
 }
 
 .examples-disclosure {
-  margin-top: 0.9rem;
+  margin-top: 1rem;
 }
 
 .examples-disclosure .example-list {
   grid-template-columns: minmax(0, 1fr);
-  margin-top: 0.6rem;
+  margin-top: 0.5rem;
   gap: 0.5rem;
 }
 
@@ -408,7 +438,7 @@ button.secondary.button-danger:hover {
 
 .sample-note {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .submitted-question {
@@ -425,15 +455,15 @@ button.secondary.button-danger:hover {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.75rem;
 }
 
 .dataset-card {
   border: 1px solid var(--border-soft);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
-  padding: 0.7rem 0.9rem;
-  box-shadow: 0 1px 2px rgb(20 31 58 / 0.05);
+  padding: 0.75rem 1rem;
+  box-shadow: var(--shadow-card);
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease;
@@ -444,11 +474,13 @@ button.secondary.button-danger:hover {
   background: var(--selected-surface);
 }
 
-/* Card title is the largest text in the card; badges sit beside it so the
-   ranking reads immediately. */
+/* Card titles share one size everywhere; badges sit beside the title so
+   the ranking reads immediately. */
 
-.dataset-card h4 {
-  font-size: clamp(1.15rem, 1.05rem + 0.5vw, 1.45rem);
+.dataset-card h4,
+.recipe-item h3,
+.recipe-item h4 {
+  font-size: clamp(1.15rem, 1.05rem + 0.5vw, 1.35rem);
   line-height: 1.25;
   margin: 0;
 }
@@ -458,7 +490,7 @@ button.secondary.button-danger:hover {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem 0.75rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
 }
 
 .card-header h4 {
@@ -469,14 +501,14 @@ button.secondary.button-danger:hover {
 .card-badges {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: flex-end;
   flex: 0 0 auto;
 }
 
 .dataset-card p {
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 .dataset-card p:last-child {
@@ -488,28 +520,41 @@ button.secondary.button-danger:hover {
   font-size: 0.85rem;
 }
 
+/* Card action bar: every action grouped on the left, in one order. */
+
 .dataset-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem 1rem;
+  justify-content: flex-start;
+  gap: 0.5rem;
   flex-wrap: wrap;
   margin-top: 0.5rem;
   border-top: 1px solid var(--border-soft);
   padding-top: 0.5rem;
 }
 
-.dataset-links {
-  display: flex;
+/* Secondary-styled link for "Open source page" (anchors skip button CSS). */
+
+a.button-link {
+  display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-top: 0.35rem;
-  font-size: 0.875rem;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
 }
 
-.dataset-actions .dataset-links {
-  margin-top: 0;
+a.button-link:hover {
+  border-color: var(--action);
+  color: var(--action);
+}
+
+a.button-link svg {
+  flex: 0 0 auto;
 }
 
 .copy-link {
@@ -533,24 +578,15 @@ button.secondary.button-danger:hover {
   font-weight: 600;
 }
 
-.detail-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.item-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex-shrink: 0;
+.collection-main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .dataset-details {
-  margin-top: 0.55rem;
+  margin-top: 0.5rem;
   border-top: 1px solid var(--border-soft);
-  padding-top: 0.55rem;
+  padding-top: 0.5rem;
 }
 
 .dataset-details ul {
@@ -563,7 +599,7 @@ button.secondary.button-danger:hover {
   border-left: 4px solid var(--info);
   border-radius: 8px;
   background: var(--surface);
-  padding: 1rem 1.1rem;
+  padding: 1rem;
   margin-top: 1rem;
 }
 
@@ -600,14 +636,16 @@ button.secondary.button-danger:hover {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1rem;
+  margin-bottom: 0;
 }
 
 .recipe-item {
   border: 1px solid var(--border-soft);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
-  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow-card);
+  padding: 1rem;
   display: flex;
   gap: 1rem;
   justify-content: space-between;
@@ -615,7 +653,7 @@ button.secondary.button-danger:hover {
 }
 
 .recipe-item p {
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 /* Assistant panel */
@@ -637,7 +675,7 @@ button.secondary.button-danger:hover {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 1.25rem 1.25rem 2rem;
+  padding: 1.5rem 1.5rem 2rem;
   display: flex;
   flex-direction: column;
 }
@@ -700,8 +738,8 @@ button.secondary.button-danger:hover {
   justify-content: space-between;
   gap: 0.5rem 0.75rem;
   flex-wrap: wrap;
-  margin: -1.25rem -1.25rem 0.75rem;
-  padding: 0.9rem 1.25rem;
+  margin: -1.5rem -1.5rem 0.75rem;
+  padding: 1rem 1.5rem;
   background: var(--nav-bg);
   color: var(--nav-text);
   border-bottom: 1px solid var(--nav-active);
@@ -715,12 +753,12 @@ button.secondary.button-danger:hover {
 
 .assistant-header-actions {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .assistant-header-actions .icon-button {
-  padding: 0.3rem 0.45rem;
+  padding: 0.25rem 0.5rem;
   line-height: 0;
 }
 
@@ -742,17 +780,9 @@ button.secondary.button-danger:hover {
   outline-color: var(--focus-on-dark);
 }
 
-.assistant-status {
-  border: 1px dashed var(--border);
-  border-radius: 6px;
-  padding: 0.6rem 0.8rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
 .assistant-inner h3 {
-  font-size: 0.95rem;
-  margin-top: 1.25rem;
+  font-size: 1.1rem;
+  margin-top: 1.5rem;
 }
 
 .assistant-steps {
@@ -785,9 +815,9 @@ button.secondary.button-danger:hover {
   color: var(--text);
   border: none;
   border-radius: 8px;
-  padding: 0.6rem 0.8rem;
+  padding: 0.5rem 0.75rem;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .context-card-toggle:hover {
@@ -796,7 +826,7 @@ button.secondary.button-danger:hover {
 }
 
 .context-card .assistant-context {
-  padding: 0 0.8rem 0.7rem;
+  padding: 0 0.75rem 0.75rem;
 }
 
 .conversation {
@@ -806,9 +836,17 @@ button.secondary.button-danger:hover {
   min-height: 0;
 }
 
-.conversation > h3 {
-  font-size: 1.2rem;
+.conversation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin-top: 1rem;
+}
+
+.conversation-header > h3 {
+  font-size: 1.25rem;
+  margin: 0;
 }
 
 .conversation .assistant-messages {
@@ -828,7 +866,7 @@ button.secondary.button-danger:hover {
   border-top: 1px solid var(--border-soft);
   padding-top: 0.75rem;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .assistant-help summary {
@@ -849,7 +887,7 @@ button.secondary.button-danger:hover {
 
 .pagination-range {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin-bottom: 0.5rem;
 }
 
@@ -857,7 +895,7 @@ button.secondary.button-danger:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .page-size {
@@ -889,7 +927,7 @@ button.page-current:hover {
 
 .page-ellipsis {
   color: var(--text-muted);
-  padding: 0 0.15rem;
+  padding: 0 0.25rem;
 }
 
 .live-selection-bar {
@@ -904,14 +942,14 @@ button.page-current:hover {
   background: var(--surface);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  padding: 0.55rem 0.9rem;
+  padding: 0.5rem 1rem;
   margin: 1rem 0 0.25rem;
 }
 
 .live-selection-bar p {
   margin: 0;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .live-selection-actions {
@@ -921,19 +959,22 @@ button.page-current:hover {
 }
 
 .review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin-top: 1rem;
 }
 
 .card-facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.25rem;
-  margin: 0 0 0.4rem;
+  gap: 0.25rem 1.5rem;
+  margin: 0 0 0.5rem;
 }
 
 .card-facts > div {
   display: inline-flex;
-  gap: 0.35rem;
+  gap: 0.25rem;
   font-size: 0.85rem;
 }
 
@@ -948,7 +989,7 @@ button.page-current:hover {
 }
 
 .overview-block {
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 .overview {
@@ -964,18 +1005,22 @@ button.page-current:hover {
   overflow: hidden;
 }
 
-.link-button {
+/* Quiet (text-only) buttons: one style under two names. */
+
+.link-button,
+.quiet {
   background: transparent;
   color: var(--action);
   border: none;
-  padding: 0.1rem 0;
+  padding: 0.25rem 0;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.link-button:hover {
+.link-button:hover,
+.quiet:hover {
   background: transparent;
   color: var(--action);
 }
@@ -983,48 +1028,48 @@ button.page-current:hover {
 .tag-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.5rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .tag-chip {
   background: var(--surface-raised);
   border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  padding: 0.1rem 0.6rem;
-  font-size: 0.8125rem;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
 }
 
 .tag-more {
-  font-size: 0.8125rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
   align-self: center;
 }
 
 .detail-section {
-  margin-top: 0.9rem;
+  margin-top: 1rem;
 }
 
 .detail-section h5 {
-  font-size: 0.9rem;
-  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
 }
 
 .detail-section dl {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.25rem;
 }
 
 .detail-row {
   display: grid;
   grid-template-columns: minmax(8rem, 11rem) 1fr;
   gap: 0.75rem;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
 }
 
 .detail-row dt {
@@ -1042,7 +1087,7 @@ button.page-current:hover {
 }
 
 .tech-metadata {
-  margin-top: 0.9rem;
+  margin-top: 1rem;
 }
 
 .tech-metadata .raw-json {
@@ -1051,13 +1096,13 @@ button.page-current:hover {
 
 .raw-json {
   font-family: var(--mono);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   line-height: 1.5;
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border-soft);
-  border-radius: 6px;
-  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
   margin: 0;
   max-height: 24rem;
   overflow: auto;
@@ -1069,17 +1114,17 @@ button.page-current:hover {
 
 .recommendation-note {
   border-top: 1px solid var(--border-soft);
-  margin-top: 0.6rem;
-  padding-top: 0.6rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
 }
 
 .recommendation-note h5 {
   font-size: 0.85rem;
-  margin: 0.5rem 0 0.2rem;
+  margin: 0.5rem 0 0.25rem;
 }
 
 .recommendation-note p {
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.25rem;
   font-size: 1rem;
 }
 
@@ -1087,9 +1132,9 @@ button.page-current:hover {
   display: inline-block;
   background: var(--action);
   color: var(--text-on-action);
-  border-radius: 999px;
-  padding: 0.15rem 0.7rem;
-  font-size: 0.8125rem;
+  border-radius: 8px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1106,9 +1151,9 @@ button.page-current:hover {
 .score-badge {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.4rem;
+  gap: 0.5rem;
   margin: 0;
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 8px;
   background: var(--accent-soft);
   border: 1px solid var(--accent);
@@ -1123,7 +1168,7 @@ button.page-current:hover {
 }
 
 .score-badge-label {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -1135,7 +1180,7 @@ button.page-current:hover {
   border-color: var(--border);
   color: var(--text-muted);
   font-weight: 600;
-  font-size: 0.8125rem;
+  font-size: 0.85rem;
 }
 
 .limitations-heading {
@@ -1149,8 +1194,8 @@ button.page-current:hover {
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 0.75rem 1rem;
   align-items: end;
-  margin: 0.9rem 0 0.5rem;
-  padding: 0.9rem 1rem;
+  margin: 1rem 0 0.5rem;
+  padding: 1rem;
   border: 1px solid var(--border-soft);
   border-radius: 8px;
   background: var(--surface);
@@ -1193,7 +1238,7 @@ button.secondary.preset-active:hover {
 .range-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .range-row input[type='range'] {
@@ -1210,8 +1255,8 @@ button.secondary.preset-active:hover {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--input-border);
-  border-radius: 6px;
-  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
 }
 
 .filter-field input[type='text'] {
@@ -1220,8 +1265,8 @@ button.secondary.preset-active:hover {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--input-border);
-  border-radius: 6px;
-  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
 }
 
 .filter-field input:disabled {
@@ -1237,7 +1282,7 @@ button.secondary.preset-active:hover {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.5rem;
   padding: 0;
   margin: 0.5rem 0;
 }
@@ -1246,8 +1291,8 @@ button.secondary.preset-active:hover {
   background: var(--selected-surface);
   border: 1px solid var(--action);
   color: var(--text);
-  border-radius: 999px;
-  padding: 0.2rem 0.7rem;
+  border-radius: 8px;
+  padding: 0.25rem 0.75rem;
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -1266,7 +1311,7 @@ button.secondary.preset-active:hover {
 
 .catalog-search-row {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
@@ -1286,10 +1331,10 @@ button.secondary.preset-active:hover {
   display: inline-block;
   background: var(--surface-raised);
   border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  padding: 0.1rem 0.6rem;
-  font-size: 0.8rem;
-  margin: 0 0.3rem 0.3rem 0;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  margin: 0 0.25rem 0.25rem 0;
 }
 
 .assistant-context {
@@ -1300,14 +1345,14 @@ button.secondary.preset-active:hover {
 }
 
 .assistant-context dt {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 
 .assistant-context dd {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .assistant-messages {
@@ -1322,7 +1367,7 @@ button.secondary.preset-active:hover {
   border: 1px solid var(--border-soft);
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .assistant-messages li p {
@@ -1340,30 +1385,30 @@ button.secondary.preset-active:hover {
 
 .chat-role {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-secondary);
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.25rem;
 }
 
 .assistant-hint {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .chat-form {
-  margin-top: 0.9rem;
+  margin-top: 1rem;
   position: sticky;
   bottom: 0;
   flex: 0 0 auto;
   background: var(--surface);
-  padding: 0.6rem 0 0.25rem;
+  padding: 0.5rem 0 0.25rem;
   border-top: 1px solid var(--border-soft);
 }
 
 .chat-form label {
   display: block;
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.25rem;
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -1385,8 +1430,8 @@ button.secondary.preset-active:hover {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--input-border);
-  border-radius: 6px;
-  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  padding: 0.5rem;
 }
 
 .chat-row input:disabled {
@@ -1395,7 +1440,6 @@ button.secondary.preset-active:hover {
 }
 
 .ai-compact h1 {
-  font-size: 1.3rem;
   margin-bottom: 0.25rem;
 }
 
@@ -1408,19 +1452,53 @@ button.secondary.preset-active:hover {
   min-height: 3.5rem;
 }
 
-.recipe-content {
-  max-width: 46rem;
+.search-loading-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
 }
 
-.recipe-content h3 {
+/* Data Recipe columns: sticky dataset list left, content right on wide
+   workspace; stacked on narrow. The query keys off the workspace width so
+   the open assistant panel counts, not just the viewport. */
+
+.recipe-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   margin-top: 1.5rem;
-  padding-bottom: 0.3rem;
-  border-bottom: 1px solid var(--border-soft);
+}
+
+.recipe-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.recipe-main .panel {
+  margin-bottom: 0;
+}
+
+@container (min-width: 60rem) {
+  .recipe-columns {
+    display: grid;
+    grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .recipe-datasets {
+    position: sticky;
+    top: 1.5rem;
+    max-height: calc(100svh - 3rem);
+    overflow-y: auto;
+  }
 }
 
 .empty-section {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 /* Recipe relationship diagram: derived only from the generated recipe. */
@@ -1479,7 +1557,7 @@ button.secondary.preset-active:hover {
 .recipe-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
+  gap: 0.5rem 1.5rem;
   margin-top: 0.5rem;
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -1488,17 +1566,17 @@ button.secondary.preset-active:hover {
 .legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .recipe-rel-heading {
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
 }
 
 .recipe-rel-list {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 
 .proposed-flag {
@@ -1507,8 +1585,8 @@ button.secondary.preset-active:hover {
   color: var(--warning);
   border: 1px solid var(--warning);
   border-radius: 999px;
-  padding: 0 0.55rem;
-  font-size: 0.78rem;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
   font-weight: 700;
 }
 
@@ -1545,8 +1623,8 @@ button.secondary.preset-active:hover {
     flex: 1 1 12rem;
   }
 
-  .workspace {
-    padding: 1.25rem 1rem 2.5rem;
+  .page-container {
+    padding: 0 1rem;
   }
 
   .example-list {

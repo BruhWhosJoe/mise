@@ -54,6 +54,8 @@ export interface AssistantUIState {
   chatRequestId: number
   suggestedQuestion: string | null
   lastChangeSummary: string | null
+  /** Snapshot for "Undo" after Clear chat; null when nothing to undo. */
+  clearedChat: ChatMessage[] | null
 }
 
 /** Snapshot for "Undo" after a chat-applied selection/filter change. */
@@ -201,6 +203,8 @@ export type WorkspaceAction =
   | { type: 'chat-retry'; requestId: number }
   | { type: 'chat-undo-applied' }
   | { type: 'chat-dismiss-suggestion' }
+  | { type: 'clear-chat' }
+  | { type: 'undo-clear-chat' }
   | { type: 'new-investigation'; investigationId: string }
   | { type: 'hydrate'; persisted: PersistedWorkspace }
   | { type: 'set-storage-notice'; notice: string | null }
@@ -242,6 +246,8 @@ export interface WorkspaceApi {
   undoChatApplied: () => void
   dismissChatSuggestion: () => void
   clearChatError: () => void
+  clearChat: () => void
+  undoClearChat: () => void
   newInvestigation: () => void
   dismissStorageNotice: () => void
 }

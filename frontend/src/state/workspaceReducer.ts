@@ -147,6 +147,7 @@ export function createInitialState(
       chatRequestId: 0,
       suggestedQuestion: null,
       lastChangeSummary: null,
+      clearedChat: null,
     },
     lastCleared: null,
     lastClearedMeta: null,
@@ -297,13 +298,21 @@ export function workspaceReducer(
         : { ...state, draftQuestion: action.draft }
 
     case 'search-start':
+      // A new search starts clean: previous recommendations, the old
+      // interpretation, and the old relevance filters leave the results area
+      // immediately, so stale rows can never sit under a new question. The
+      // collection, the completed duration, and the chat are untouched.
       return {
         ...state,
         submittedQuestion: action.question,
+        liveQuestion: null,
+        discoveryUI: defaultDiscoveryUI(),
+        chatApplied: null,
         aiSearch: {
           ...state.aiSearch,
           status: 'loading',
           question: action.question,
+          result: null,
           error: null,
           startedAt: action.startedAt,
           endedAt: null,
@@ -357,10 +366,11 @@ export function workspaceReducer(
       }
 
     case 'search-cancel': {
-      // Cancellation ends the in-flight search only: any previous result,
-      // completed duration, and selection stay intact. The request identity
-      // rotates so a late response can never overwrite the workspace —
-      // including after a newer search has started.
+      // Cancellation ends the in-flight search only: the completed duration
+      // and the selection stay intact (results were already cleared when the
+      // search started). The request identity rotates so a late response can
+      // never overwrite the workspace — including after a newer search has
+      // started.
       if (
         action.investigationId !== state.investigationId ||
         state.aiSearch.status !== 'loading'
@@ -746,6 +756,9 @@ export function workspaceReducer(
           chatStatus: 'loading',
           chatError: null,
           chatRequestId: action.requestId,
+          // A fresh turn retires any pre-clear stash: Undo must never swap
+          // new messages for cleared ones.
+          clearedChat: null,
         },
       }
     }
@@ -1047,6 +1060,39 @@ export function workspaceReducer(
         assistant: { ...state.assistant, suggestedQuestion: null },
       }
 
+    case 'clear-chat': {
+      // Quiet clear: only the message list is stashed for one Undo, so a
+      // pending change summary keeps its own Undo reachable. Never during a
+      // send — the panel keeps the button disabled while a reply is in
+      // flight.
+      if (
+        state.assistant.messages.length === 0 ||
+        state.assistant.chatStatus === 'loading'
+      ) {
+        return state
+      }
+      return {
+        ...state,
+        assistant: {
+          ...state.assistant,
+          messages: [],
+          clearedChat: state.assistant.messages,
+        },
+      }
+    }
+
+    case 'undo-clear-chat': {
+      if (state.assistant.clearedChat === null) return state
+      return {
+        ...state,
+        assistant: {
+          ...state.assistant,
+          messages: state.assistant.clearedChat,
+          clearedChat: null,
+        },
+      }
+    }
+
     case 'new-investigation':
       return {
         ...state,
@@ -1078,6 +1124,7 @@ export function workspaceReducer(
           chatRequestId: 0,
           suggestedQuestion: null,
           lastChangeSummary: null,
+          clearedChat: null,
         },
         lastCleared: null,
         lastClearedMeta: null,
@@ -1144,6 +1191,7 @@ export function workspaceReducer(
           chatRequestId: 0,
           suggestedQuestion: null,
           lastChangeSummary: null,
+          clearedChat: null,
         },
         lastCleared: null,
         lastClearedMeta: null,

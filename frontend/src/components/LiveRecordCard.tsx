@@ -8,7 +8,7 @@ import {
 } from '../utils/datasetLinks'
 import { formatRecordDate } from '../utils/dates'
 import CopyLinkButton from './CopyLinkButton'
-import { DatasetDetailSections, ExternalLink } from './DatasetDetails'
+import { DatasetDetailSections, OpenSourceButton } from './DatasetDetails'
 
 const OVERVIEW_CLAMP_CHARS = 160
 const SHOWN_TAGS = 4
@@ -28,31 +28,6 @@ interface LiveRecordCardProps {
   /** Stable key for the persisted expanded-details state. */
   expandedKey: string
   annotation?: RecommendationNote
-}
-
-/**
- * Card-level actions shared by discovery and catalog cards: open the source
- * page in a new tab and copy the best available link. Uses only the URLs the
- * record already carries — rendering cards never fires detail requests.
- */
-export function DatasetCardLinks({ record }: { record: LiveRecord }) {
-  const links = authoritativeLinks(record)
-  const title = record.title ?? 'this dataset'
-  return (
-    <div className="dataset-links">
-      {links.sourcePage ? (
-        <ExternalLink href={links.sourcePage}>
-          Open source page
-        </ExternalLink>
-      ) : (
-        <span className="not-provided">Source link not provided</span>
-      )}
-      <CopyLinkButton
-        url={preferredShareLink(links)}
-        itemLabel={title}
-      />
-    </div>
-  )
 }
 
 function LiveRecordCard({
@@ -115,6 +90,10 @@ function LiveRecordCard({
   const shownTags = record.tags?.slice(0, SHOWN_TAGS) ?? []
   const hiddenTagCount = (record.tags?.length ?? 0) - shownTags.length
   const shown = detail ?? record
+  // Link actions use only the URLs the record already carries — rendering
+  // cards never fires detail requests.
+  const links = authoritativeLinks(record)
+  const linkLabel = record.title ?? 'this dataset'
 
   return (
     <li className={selected ? 'dataset-card is-selected' : 'dataset-card'}>
@@ -261,10 +240,9 @@ function LiveRecordCard({
             {!selectable
               ? 'Not selectable (no ID)'
               : selected
-                ? 'Added to recipe'
+                ? 'Added ✓'
                 : 'Add to recipe'}
           </button>
-          <DatasetCardLinks record={record} />
           <button
             type="button"
             className="secondary small"
@@ -274,6 +252,15 @@ function LiveRecordCard({
           >
             {open ? 'Hide details' : 'View details'}
           </button>
+          {links.sourcePage ? (
+            <OpenSourceButton href={links.sourcePage} />
+          ) : (
+            <span className="not-provided">Source link not provided</span>
+          )}
+          <CopyLinkButton
+            url={preferredShareLink(links)}
+            itemLabel={linkLabel}
+          />
         </div>
 
         {open && (

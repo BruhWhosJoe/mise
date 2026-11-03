@@ -28,6 +28,8 @@ function AssistantPanel() {
     undoChatApplied,
     dismissChatSuggestion,
     clearChatError,
+    clearChat,
+    undoClearChat,
   } = useWorkspace()
   const assistant = state.assistant
   const selectionCount = state.liveSelected.length
@@ -141,7 +143,36 @@ function AssistantPanel() {
       </details>
 
       <section aria-label="Conversation" className="conversation">
-        <h3>Conversation</h3>
+        <div className="conversation-header">
+          <h3>Conversation</h3>
+          {assistant.messages.length > 0 && (
+            <button
+              type="button"
+              className="quiet small"
+              onClick={clearChat}
+              disabled={loading}
+              title={
+                loading
+                  ? 'Wait for the assistant to finish before clearing'
+                  : undefined
+              }
+            >
+              Clear chat
+            </button>
+          )}
+        </div>
+        {assistant.clearedChat !== null && (
+          <div className="notice notice-inline" role="status">
+            <p>Conversation cleared.</p>
+            <button
+              type="button"
+              className="secondary small"
+              onClick={undoClearChat}
+            >
+              Undo
+            </button>
+          </div>
+        )}
         {assistant.messages.length === 0 ? (
           <div className="conversation-empty">
             {hasResults ? (
