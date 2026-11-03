@@ -109,6 +109,7 @@ function makeDiscovery(question: string, record: LiveRecord): DiscoveryResponse 
       model_duplicates_removed: 0,
       result_cap: 10,
       cap_applied: false,
+      top_candidates: [],
     },
     partial: false,
     partial_reason: null,

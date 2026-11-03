@@ -84,11 +84,12 @@ def test_expand_query_uses_one_small_bounded_call(monkeypatch):
         return {'keywords': ['crash'], 'place': ['DC']}
 
     monkeypatch.setattr(ModelClient, 'complete_json', fake_complete)
+    monkeypatch.delenv('MF_EXPANSION_TIMEOUT_SECONDS', raising=False)
     result = _run(expand_query('pedestrian safety?', _settings()))
     assert result.keywords == ['crash']
     assert result.place == ['DC']
     assert seen['schema_name'] == 'expansion'
-    assert seen['timeout'] == expansion.EXPANSION_TIMEOUT_SECONDS
+    assert seen['timeout'] == 30.0
     assert seen['tokens'] == expansion.EXPANSION_MAX_OUTPUT_TOKENS
     assert seen['retries'] == 0
 
@@ -102,6 +103,7 @@ def test_expand_query_keeps_tighter_configured_budgets(monkeypatch):
         return {'keywords': [], 'place': []}
 
     monkeypatch.setattr(ModelClient, 'complete_json', fake_complete)
+    monkeypatch.delenv('MF_EXPANSION_TIMEOUT_SECONDS', raising=False)
     _run(
         expand_query(
             'anything?',
@@ -110,6 +112,19 @@ def test_expand_query_keeps_tighter_configured_budgets(monkeypatch):
     )
     assert seen['timeout'] == 5.0
     assert seen['tokens'] == 100
+
+
+def test_expand_query_timeout_is_env_configurable(monkeypatch):
+    seen = {}
+
+    async def fake_complete(self, **kwargs):
+        seen['timeout'] = self._settings.timeout_seconds
+        return {'keywords': [], 'place': []}
+
+    monkeypatch.setattr(ModelClient, 'complete_json', fake_complete)
+    monkeypatch.setenv('MF_EXPANSION_TIMEOUT_SECONDS', '12')
+    _run(expand_query('anything?', _settings()))
+    assert seen['timeout'] == 12.0
 
 
 def test_expand_query_propagates_model_failures(monkeypatch):

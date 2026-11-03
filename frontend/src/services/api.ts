@@ -92,6 +92,7 @@ export interface DiscoveryCoverage {
   model_duplicates_removed: number
   result_cap: number
   cap_applied: boolean
+  top_candidates: string[]
 }
 
 export interface DiscoveryResponse {

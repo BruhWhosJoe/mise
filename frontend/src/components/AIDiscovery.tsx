@@ -791,6 +791,16 @@ function AIDiscovery() {
                     Candidates evaluated by the model:{' '}
                     {result.coverage.candidates_evaluated}
                   </li>
+                  {result.coverage.top_candidates.length > 0 && (
+                    <li>
+                      Top candidates considered:
+                      <ul>
+                        {result.coverage.top_candidates.map((title) => (
+                          <li key={title}>{title}</li>
+                        ))}
+                      </ul>
+                    </li>
+                  )}
                   {result.coverage.candidates_excluded_no_id > 0 && (
                     <li>
                       Excluded for missing IDs:{' '}

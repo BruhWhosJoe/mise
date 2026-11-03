@@ -275,7 +275,7 @@
 .investigation-summary {
   background: var(--surface);
   border: 1px solid var(--border-soft);
-  border-left: 4px solid var(--accent);
+  border-left: 4px solid var(--action);
   border-radius: 8px;
   padding: 0.8rem 1rem;
   margin-bottom: 1.25rem;
@@ -660,15 +660,16 @@ button.secondary.button-danger:hover {
   top: 0;
   bottom: 0;
   left: 50%;
-  width: 5px;
+  width: 4px;
   transform: translateX(-50%);
-  border-radius: 3px;
-  background: var(--accent);
+  border-radius: 2px;
+  background: var(--border);
 }
 
 .assistant-resize-handle:hover::before,
+.assistant-resize-handle:active::before,
 .assistant-resize-handle:focus-visible::before {
-  background: var(--accent-dark);
+  background: var(--action);
 }
 
 .assistant-resize-grip {
@@ -689,7 +690,7 @@ button.secondary.button-danger:hover {
 }
 
 .assistant-resize-handle:focus-visible {
-  outline: 2px solid var(--accent-dark);
+  outline: 2px solid var(--focus);
   outline-offset: -2px;
 }
 
@@ -1467,7 +1468,7 @@ button.secondary.preset-active:hover {
 }
 
 .recipe-edge-proposed {
-  stroke: var(--accent);
+  stroke: var(--warning);
   stroke-dasharray: 6 4;
 }
 
@@ -1502,9 +1503,9 @@ button.secondary.preset-active:hover {
 
 .proposed-flag {
   display: inline-block;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border: 1px solid var(--accent);
+  background: var(--surface-raised);
+  color: var(--warning);
+  border: 1px solid var(--warning);
   border-radius: 999px;
   padding: 0 0.55rem;
   font-size: 0.78rem;

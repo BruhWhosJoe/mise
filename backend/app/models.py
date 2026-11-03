@@ -118,6 +118,7 @@ class DiscoveryCoverage(BaseModel):
     cap_applied: bool = False
     expanded_terms: list[str] = Field(default_factory=list)
     expansion_fallback: bool = False
+    top_candidates: list[str] = Field(default_factory=list)
 
 
 class DiscoveryResponse(BaseModel):

@@ -19,10 +19,10 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
+from .config import get_settings
 from .model_client import ModelClient, ModelOutputError, ModelSettings
 
 MAX_KEYWORDS = 20
-EXPANSION_TIMEOUT_SECONDS = 15.0
 EXPANSION_MAX_OUTPUT_TOKENS = 800
 
 EXPANSION_SYSTEM = """You extract search terms from a research question about government open datasets.
@@ -104,11 +104,10 @@ async def expand_query(
     question: str, model_settings: ModelSettings
 ) -> ExpansionResult:
     """Run one small bounded expansion call (raises ModelError on failure)."""
+    configured_timeout = get_settings().expansion_timeout_seconds
     small = replace(
         model_settings,
-        timeout_seconds=min(
-            model_settings.timeout_seconds, EXPANSION_TIMEOUT_SECONDS
-        ),
+        timeout_seconds=min(model_settings.timeout_seconds, configured_timeout),
         max_output_tokens=min(
             model_settings.max_output_tokens, EXPANSION_MAX_OUTPUT_TOKENS
         ),

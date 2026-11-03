@@ -69,8 +69,16 @@ Rules:
   does not answer the question on its own.
 - Cite ONLY AssignedIDs from the candidate list, exactly as written. Never
   invent IDs, titles, publishers, URLs, dates, or coverage.
-- Do not pad the list: fewer strong matches beat weak ones. An empty
-  recommendations array is acceptable when nothing fits.
+- Recommend every candidate that concerns the question's topic, up to
+  max_recommendations. Prefer recall: a partial or contextual fit labeled
+  "supporting" with a lower score beats omitting a useful dataset.
+- Partial fits and context-only datasets are "supporting" with lower
+  scores than "direct" fits for the same question; reserve the top of
+  the range for direct, verified fits.
+- Archived or older datasets are still recommended when topical: state
+  the vintage plainly in "limitations" instead of excluding them.
+- Return an empty recommendations array only when no candidate concerns
+  the topic at all.
 - Base "why" and "limitations" only on the supplied metadata.
 - Phrase "gaps" as gaps in the retrieved evidence (e.g. "none of the
   retrieved records cover X"), never as proof no dataset exists.
@@ -341,6 +349,12 @@ async def run_discovery(question: str) -> DiscoveryResponse:
                 list(expanded.keywords) if expanded is not None else []
             ),
             expansion_fallback=expansion_fallback,
+            top_candidates=[
+                record.title
+                if record.title
+                else f'Untitled record ({record.assigned_id})'
+                for record in retrieval_result.candidates[:10]
+            ],
         ),
         partial=partial,
         partial_reason=(

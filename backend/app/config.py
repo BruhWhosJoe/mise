@@ -93,6 +93,7 @@ class Settings:
     model_structured_mode: str
     discovery_candidates: int
     discovery_max_results: int
+    expansion_timeout_seconds: float
     recipe_max_datasets: int
     catalog_cache_seconds: int
     catalog_cache_max_records: int
@@ -131,8 +132,11 @@ def get_settings() -> Settings:
         model_structured_mode=os.environ.get(
             'MF_MODEL_STRUCTURED_MODE', 'json_schema'
         ),
-        discovery_candidates=_get_int('MF_DISCOVERY_CANDIDATES', 40),
-        discovery_max_results=_get_int('MF_DISCOVERY_MAX_RESULTS', 8),
+        discovery_candidates=_get_int('MF_DISCOVERY_CANDIDATES', 80),
+        discovery_max_results=_get_int('MF_DISCOVERY_MAX_RESULTS', 15),
+        expansion_timeout_seconds=_get_float(
+            'MF_EXPANSION_TIMEOUT_SECONDS', 30.0
+        ),
         recipe_max_datasets=_get_int('MF_RECIPE_MAX_DATASETS', 10),
         catalog_cache_seconds=_get_int('MF_CATALOG_CACHE_SECONDS', 900),
         catalog_cache_max_records=_get_int(
