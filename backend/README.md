@@ -17,7 +17,7 @@ metadata MCP service. Flow: browser → our backend → MCP → browser.
 
 ## Setup
 
-From `C:\Projects\metafabric` (uses the root `.venv`, Python 3.12):
+From `C:\Projects\Mise` (uses the root `.venv`, Python 3.12):
 
 ```powershell
 .venv\Scripts\python.exe -m pip install -r backend/requirements.txt
@@ -28,7 +28,7 @@ install, run `pip freeze` and pin the versions you tested with.
 
 ## Run the backend
 
-From `C:\Projects\metafabric` (keep this terminal running):
+From `C:\Projects\Mise` (keep this terminal running):
 
 ```powershell
 .venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8001
@@ -38,7 +38,7 @@ Health check: http://127.0.0.1:8001/api/health
 
 ## Run the tests
 
-From `C:\Projects\metafabric`:
+From `C:\Projects\Mise`:
 
 ```powershell
 .venv\Scripts\python.exe -m pytest backend/tests -q
@@ -47,7 +47,7 @@ From `C:\Projects\metafabric`:
 ## Live smoke test
 
 Bounded: discovers tools, reads fields, fetches 3 records, then full
-metadata for one returned ID. From `C:\Projects\metafabric`:
+metadata for one returned ID. From `C:\Projects\Mise`:
 
 ```powershell
 .venv\Scripts\python.exe backend/scripts/smoke_mcp.py

@@ -260,6 +260,9 @@ function AIDiscovery() {
               </button>
             )}
           </div>
+          <p className="sample-note powered-note">
+            Powered by Meta Muse Spark
+          </p>
         </div>
         {draftError && (
           <p id="ai-question-error" className="question-toast" role="alert">

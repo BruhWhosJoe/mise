@@ -751,6 +751,23 @@ a.button-link svg {
   color: var(--nav-text);
 }
 
+.assistant-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+/* Quiet attribution labels: meta size, muted on their own surface. */
+.powered-note {
+  margin: 0.5rem 0 0;
+}
+
+.powered-note-header {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--nav-muted);
+}
+
 .assistant-header-actions {
   display: flex;
   gap: 0.5rem;

@@ -62,7 +62,10 @@ function AssistantPanel() {
   return (
     <div className="assistant-inner">
       <div className="assistant-header">
-        <h2>Assistant</h2>
+        <div className="assistant-title">
+          <h2>Assistant</h2>
+          <p className="powered-note-header">Powered by Meta Muse Spark</p>
+        </div>
         <div className="assistant-header-actions">
           <button
             type="button"

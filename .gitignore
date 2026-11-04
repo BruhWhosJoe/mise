@@ -9,3 +9,6 @@ __pycache__/
 pip-*/
 .pytest_cache/
 frontend/state-tests/dist/
+
+HANDOFF.md
+dashboard-task.md
