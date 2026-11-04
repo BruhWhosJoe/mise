@@ -1,168 +1,138 @@
-<div align="center">
+# Mise
 
-# 🥣 Mise
+Mise turns a plain-English question about Washington, DC into a shortlist of relevant open government datasets, then writes an analysis plan for the datasets you pick.
 
-### Ask a question about your city. Get the right open datasets and a plan to analyze them.
+The name comes from *mise en place*, the cooking habit of prepping every ingredient before you start. Most of the work in a data project happens before any analysis: finding the right sources, checking what they actually contain, and figuring out how they fit together. Mise handles that part.
 
-*Mise (from* mise en place*, "everything in its place") gets your data ready before you analyze.*
+Built for the Meta Global AI Developer Hackathon (Indie track). All runtime AI is Meta's Muse Spark, and the app was built with Muse Code.
 
-![Meta Muse Spark](https://img.shields.io/badge/AI-Meta%20Muse%20Spark-0866FF)
-![Built with Muse Code](https://img.shields.io/badge/built%20with-Muse%20Code-0866FF)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-Python%203.12-009688?logo=fastapi&logoColor=white)
-![MCP](https://img.shields.io/badge/data-MCP%20metadata%20server-6A4FD0)
-![License: MIT](https://img.shields.io/badge/license-MIT-green)
+![Mise returning ranked datasets for a question about DC](docs/screenshots/discovery.png)
 
-**[Demo video](#-demo)** · **[How it works](#-how-it-works)** · **[Run it locally](#-run-it-locally)**
+## Why I built this
 
-<img src="docs/screenshots/discovery.png" alt="Mise AI Discovery: a plain-English question returns ranked DC open datasets with relevance scores and explanations" width="100%">
+DC publishes over 1,600 open datasets. When I tried to answer a simple question with them, like what affects pedestrian safety near schools, the portal's keyword search mostly returned aerial imagery and zoning layers. The useful datasets were there (crash records, Safe Passage routes, school locations), but finding them meant already knowing what to look for.
 
-</div>
+So I wanted a tool that starts from the question instead of the keywords, and that is honest about what the data can and can't tell you.
 
----
+## What it does
 
-## The problem
+1. **Discovery.** You ask a question. Mise searches the full DC catalog and returns ranked datasets, each with a relevance score, a short explanation of why it was chosen, and its limitations (archived, old, partial coverage, and so on).
+2. **Inspection.** Every result links to its real source page, service endpoint, publisher, and license. You can open the full metadata before trusting anything.
+3. **Assistant.** A side panel answers questions about your results and can change your selection when you ask ("add the top 3 to my recipe"). Every change it makes can be undone.
+4. **Data Recipe.** From the datasets you select, Mise writes an analysis plan: objective, workflow steps, how the datasets relate, data gaps, and limitations. You can download it as Markdown or JSON.
 
-Washington, DC publishes **1,660+ open datasets**. If you're a student, a reporter, or a resident with a real question, like *"What affects pedestrian safety near schools?"*, keyword search buries you in aerial photos and zoning layers, and nothing tells you how the right datasets fit together.
+A recipe is a plan, not a result. Mise never runs analysis or reports findings, and it never invents dataset IDs, links, or numbers.
 
-## What Mise does
+Some real results from testing:
 
-You ask in plain English. Mise searches the **entire DC catalog**, has **Meta Muse Spark** judge which datasets actually fit, explains each one, and turns your picks into a **Data Recipe**: a step-by-step analysis plan with joins, caveats, and data gaps that you can download.
-
-| You ask | Mise finds (examples from real runs) |
+| Question | Top results |
 |---|---|
-| *What affects pedestrian safety near schools in DC?* | Safe Passage Routes (90), Crash Details Table (88), DC Public Schools |
-| *Give me a list of bus stops in DC* | Commuter Bus Stops (95), Metro Bus Stops 2023–2025 (85), ADA Bus Stop (70), Shuttle Bus Stops (65) |
-| *How is access to healthcare distributed across DC?* | Primary Care Facility (88), Healthcare for Homebound Older Adults (62) |
+| What affects pedestrian safety near schools in DC? | Safe Passage Routes (90), Crash Details Table (88), DC Public Schools |
+| Give me a list of bus stops in DC | Commuter Bus Stops (95), Metro Bus Stops 2023–2025 (85), ADA Bus Stop (70) |
+| How is access to healthcare distributed across DC? | Primary Care Facility (88), Healthcare for Homebound Older Adults (62) |
 
-## ✨ Features
+![Recommendation cards with scores, explanations, and actions](docs/screenshots/results.png)
 
-- **AI Discovery.** Ranked recommendations with a 0–100 relevance score, a *Direct match* or *Supporting* label, a plain-language "why", and stated limitations.
-- **Real sources, always.** Every card links to the actual dataset page, service endpoint, publisher, and license. Mise never invents IDs, links, or data.
-- **"How this search worked."** Every search shows the expanded search terms, how many records were searched, which candidates the model evaluated, and any fallback that was used.
-- **An assistant that acts.** "Add the top 3 to my recipe" applies a validated change to your collection, with one-click **Undo**.
-- **Data Recipes.** An analysis plan covering the objective, workflow steps, how the datasets relate, data gaps, limitations, and proposed outputs. Download it as **Markdown or JSON**.
-- **Browse the full catalog.** Search all 1,660 records by title or exact ID, inspect full metadata, and build a collection by hand.
-- **Built for real use.** Cancelable searches, saved workspaces, light and dark themes, keyboard-accessible resizing, and per-IP rate limits on AI endpoints.
-
-<img src="docs/screenshots/results.png" alt="Recommendation cards showing relevance scores, why each dataset was chosen, and grouped actions" width="100%">
-
-## 🎬 Demo
-
-> 📺 **Demo video:** _link coming soon_
-
-1. Ask *"What affects pedestrian safety near schools in Washington, DC?"*
-2. Review the ranked results, open **View details**, and check the real source link.
-3. Ask the assistant: *"Add the top 3 to my recipe."*
-4. Open **Data Recipe**, click **Generate**, then **Download Markdown**.
-
-## 🧠 How it works
+## How it works
 
 ```mermaid
 flowchart LR
-    U[You: plain-English question] --> FE[React + TypeScript UI]
-    FE -->|/api| BE[FastAPI backend]
-    BE -->|MCP| CAT[(DC metadata catalog<br/>1,660 records)]
-    BE -->|Muse Spark| EXP[1. Query expansion]
-    EXP --> RET[2. Weighted lexical retrieval<br/>whole-word + stemming + IDF]
+    Q[Question] --> UI[React frontend]
+    UI -->|/api| API[FastAPI backend]
+    API -->|MCP| CAT[(DC metadata catalog)]
+    API --> EXP[Query expansion<br/>Muse Spark]
+    EXP --> RET[Lexical retrieval<br/>whole-word, stemming, IDF]
     CAT --> RET
-    RET -->|80-candidate shortlist| EVAL[3. Muse Spark relevance evaluation]
-    EVAL --> VAL[4. Validate IDs against real records]
-    VAL --> FE
-    FE -->|selected datasets| REC[Muse Spark: Data Recipe]
+    RET -->|shortlist of 80| EVAL[Relevance evaluation<br/>Muse Spark]
+    EVAL --> VAL[ID validation]
+    VAL --> UI
+    UI -->|selected datasets| REC[Data Recipe<br/>Muse Spark]
 ```
 
-All runtime AI is **Meta Muse Spark** (`muse-spark-1.3`) via the Meta Model API:
+The backend pulls the catalog from a remote metadata server over MCP and caches it. A search then runs in two stages.
 
-| Step | What Muse Spark does |
-|---|---|
-| **Query expansion** | Turns the question into topical keywords and synonyms (*pedestrian safety → crash, crosswalk, sidewalk, vision zero*) and separates out place names |
-| **Relevance evaluation** | Scores the shortlist against a rubric (topic fit, geographic and temporal fit, role, suitability) and explains every pick |
-| **Data Recipe** | Writes the analysis plan from the selected datasets' metadata |
-| **Assistant** | Answers questions about your investigation and proposes typed, validated actions |
+**Stage 1: retrieval (local, no AI cost).** Muse Spark first expands the question into topical keywords, so "pedestrian safety" also searches for crashes, crosswalks, and Vision Zero. Then every record in the catalog is scored locally on whole-word matches in its title, tags, publisher, and description. The top 80 go on to stage 2.
 
-### Technical decisions worth noting
+**Stage 2: evaluation.** Muse Spark scores that shortlist against a rubric (topic fit, geographic and time coverage, whether the dataset answers the question directly or only provides context) and explains each pick. The backend then checks every returned ID against the real catalog and drops anything that doesn't match.
 
-**1. Two-stage retrieval keeps AI cost bounded as catalogs grow.**
-Sending all 1,660 records to the model on every search would be slow and expensive, and wouldn't scale to state or national catalogs. Mise ranks every record locally first, then has Muse Spark evaluate only an 80-candidate shortlist. If the model times out, it retries once with the top 40 candidates and says so in the results.
+### Problems I ran into
 
-**2. IDF weighting fixed a real failure.**
-The first version used naive substring matching. Because every record mentions "Washington" and "DC", those words dominated the scores: *"pedestrian safety near schools in DC"* returned **zero** results, with the shortlist full of aerial photos. Mise now uses whole-word matching, light stemming (*schools → school*), and per-catalog [IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) weighting, so words that appear in more than 30% of records count for nothing. The same question now returns Safe Passage Routes and crash data at the top.
+**Everything matched "DC."** My first retrieval step used simple substring matching, so a query like "pedestrian safety near schools in Washington, DC" matched nearly every record, because nearly every record mentions Washington or DC. The 40-slot shortlist filled up with aerial photos and the model correctly reported that nothing fit. Switching to whole-word matching with IDF weighting (words that appear in more than 30% of records get zero weight) fixed it, and the same question now returns crash and Safe Passage data at the top. Small catalogs skip the zeroing so tests and tiny datasets still work.
 
-**3. The model can't make things up and get away with it.**
-Every model response is schema-validated. Returned dataset IDs are checked against real catalog records, unknown IDs are dropped and counted, and malformed output gets one repair attempt. Assistant actions are validated against the current state before anything changes, and every change can be undone.
+**The model was too strict.** Early prompts told the model that fewer, stronger matches were better, so it would return nothing for "how many bus stops are in DC?" because the best match was labeled archived. I changed the rubric so archived or partial datasets are still recommended, with the caveat written into their limitations.
 
-**4. Honest by design.**
-Relevance scores are labeled as the model's own judgment, not probabilities. Archived datasets are still recommended, with their vintage noted. A recipe is clearly marked as a *proposed plan, not executed analysis*, and it lists what the data can't answer.
+**The assistant said it did things it didn't do.** Sometimes Muse Spark would reply "Adding the top 3 datasets…" without sending the structured action that actually changes the selection. I added a small parser for unambiguous commands (add/remove the top N, clear, undo) as a fallback, and a rule that replaces any reply claiming a change that wasn't applied.
 
-## 🚀 Run it locally
+**Timeouts and truncation.** Scoring 80 candidates sometimes takes longer than the request timeout, so the backend retries once with the top 40 and says so in the "How this search worked" panel. Muse Spark's reasoning also counts against the output token limit, which caused truncated JSON until I raised the limit and capped results at 10.
 
-**Requirements:** Python 3.12, Node 20+, a [Meta Model API](https://dev.meta.ai) key.
+### Guardrails
+
+- Model output is schema-validated, and malformed responses get one repair attempt before an error is shown.
+- Assistant actions are validated against the current state before anything changes, and each one can be undone.
+- The AI endpoints have per-IP rate limits and a cap on concurrent model calls.
+- The API key stays on the server. It is never sent to the browser or committed.
+
+## Running it locally
+
+You need Python 3.12, Node 20+, and a Meta Model API key.
 
 ```powershell
-# 1. Backend
+# backend
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r backend/requirements.txt
-copy backend\.env.example backend\.env      # then set MF_MODEL_API_KEY
+copy backend\.env.example backend\.env      # add MF_MODEL_API_KEY
 .venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8001
 
-# 2. Frontend (second terminal)
+# frontend, in a second terminal
 cd frontend
 npm install
 npm run dev                                  # http://localhost:5173
 ```
 
-**Or run it as one container:**
+Or as a single container:
+
 ```bash
 docker build -t mise .
-docker run -p 8000:8000 -e MF_MODEL_API_KEY=your_key mise   # http://localhost:8000
+docker run -p 8000:8000 -e MF_MODEL_API_KEY=your_key mise
 ```
 
-**Tests:** `.venv\Scripts\python.exe -m pytest backend/tests -q` (backend, 180+ tests) and `cd frontend; npm run test:state` (workspace state).
+Tests: `.venv\Scripts\python.exe -m pytest backend/tests -q` for the backend and `npm run test:state` in `frontend/` for the workspace state logic.
 
-Every setting is listed in `backend/.env.example`. The API key never reaches the browser and is never committed.
+All configuration is documented in `backend/.env.example`.
 
-## 📁 Project structure
+## Project layout
 
 ```
-mise/
-├── backend/
-│   ├── app/
-│   │   ├── retrieval.py     # whole-word + stemming + IDF candidate ranking
-│   │   ├── expansion.py     # Muse Spark query expansion with fallback
-│   │   ├── discovery.py     # search pipeline + model output validation
-│   │   ├── recipe.py        # Data Recipe generation
-│   │   ├── chat.py          # assistant replies + validated actions
-│   │   ├── mcp_service.py   # metadata catalog client (MCP)
-│   │   └── rate_limit.py    # per-IP limits + model concurrency cap
-│   └── tests/
-├── frontend/src/
-│   ├── components/          # Discovery, Catalog, Recipe, Assistant
-│   └── state/               # workspace store, persistence, Undo
-└── Dockerfile
+backend/app/
+  retrieval.py     candidate ranking (whole-word, stemming, IDF)
+  expansion.py     query expansion with fallback
+  discovery.py     search pipeline and output validation
+  recipe.py        Data Recipe generation
+  chat.py          assistant replies, actions, intent fallback
+  mcp_service.py   metadata catalog client
+  rate_limit.py    rate limiting and model concurrency
+frontend/src/
+  components/      Discovery, Catalog, Recipe, Assistant
+  state/           workspace store, persistence, undo
 ```
 
-## ⚠️ Limitations
+## Limitations
 
-- **DC only, for now.** Mise searches opendata.dc.gov through the metadata MCP server.
-- A search takes about **40–60 seconds**, mostly model time. It shows elapsed time and can be canceled.
-- Retrieval is keyword-based plus AI expansion, so very unusual phrasing can still miss datasets. Use **Browse Catalog** to search every title directly.
-- Relevance scores are the model's own assessment, not calibrated probabilities.
+- Only DC's catalog (opendata.dc.gov) is supported right now.
+- A search takes roughly 40–60 seconds, almost all of it model time.
+- Retrieval is keyword-based with AI expansion, so unusual phrasing can still miss things. Browse Catalog searches every title directly as a backup.
+- Relevance scores are the model's judgment, not calibrated probabilities.
 
-## 🗺️ Roadmap
+## What's next
 
-- [ ] Add state portals, starting with one state, then national (data.gov)
-- [ ] Persistent search index (PostgreSQL full-text search) refreshed in the background
-- [ ] Hybrid keyword and semantic retrieval
-- [ ] Shareable recipe links
+The main goal is adding more catalogs, starting with one state portal and then data.gov. That means moving from an in-memory cache to a real search index (probably PostgreSQL full-text search, refreshed in the background), keeping dataset IDs unique across sources, and separating a dataset's geographic coverage from where its publisher is located. After that, I'd like to try hybrid keyword and semantic retrieval for questions that use different wording than the metadata.
 
-## 🙏 Credits
+## Credits
 
-- **Data:** [Open Data DC](https://opendata.dc.gov). Most DC GIS data is licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); check each dataset's "Use limitations" in Mise.
-- **AI:** Meta Muse Spark via the Meta Model API. The app was built with **Muse Code**.
-- **Built for** the Meta Global AI Developer Hackathon 2026, Indie Developer track.
+Dataset metadata comes from [Open Data DC](https://opendata.dc.gov). Most DC GIS data is published under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); check each dataset's use limitations before using it.
+
+AI features use Meta Muse Spark through the Meta Model API. Built with Muse Code.
 
 ## License
 
-[MIT](LICENSE)
+MIT
